@@ -123,7 +123,7 @@ cycleOf x o = cycleThrough x
 support :: Ord a => Permutation a -> [a]
 support (P g) = M.keys g
 
--- Given z, decompose a permutation into the product of transpositions of the form (z x)
+-- Given z, decompose a permutation into a product of transpositions of the form (z x)
 -- This can be done for any permutation and any z
 transpositionDecomposition :: Ord a => a -> Permutation a -> [[a]]
 transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
@@ -134,10 +134,10 @@ transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
     process [] = []
     process (x : xs) = process xs ++ [[z, x]]
 
--- Given z1, z2 decompose a permutation into the product of transpositions of the form (z1 z2 x), (z2 z1 x)
+-- Given z1, z2 decompose a permutation into a product of 3-cycles of the form (z1 z2 x), (z2 z1 x)
 -- This can be done for any even permutation and any z1, z2
-evenCycleDecomposition :: Ord a => a -> a -> Permutation a -> [[a]]
-evenCycleDecomposition z1 z2 o = pairOff $ transpositionDecomposition z1 o
+threeCycleDecomposition :: Ord a => a -> a -> Permutation a -> [[a]]
+threeCycleDecomposition z1 z2 o = pairOff $ transpositionDecomposition z1 o
   where
     pairOff ([_, a] : [_, b] : xs)
       | a == b = pairOff xs

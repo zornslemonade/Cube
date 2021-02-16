@@ -9,7 +9,7 @@ import Permutation
 -- Defining an Permutable type class
 ------
 
--- This class is meant for containers types which admit a well-defined action
+-- This class is meant for container types which admit a well-defined action
 -- by the symmetric group S_n, where n is their length.
 
 class (Foldable z) => Permutable z where

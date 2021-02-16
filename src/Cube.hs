@@ -455,7 +455,7 @@ orientEdges (C (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ toPairLis
         _ -> ""
 
 positionVertices :: CubeConfiguration -> [Turn]
-positionVertices (C (_, _, c, _, _, _)) = concatMap evenCycleToSequence $ evenCycleDecomposition 1 2 c
+positionVertices (C (_, _, c, _, _, _)) = concatMap evenCycleToSequence $ threeCycleDecomposition 1 2 c
   where
     x = "LflFLflFLflFUULflFLflFLflFuLflFLflFLflFuLflFLflFLflF"
     y = "fLFlfLFlfLFlUfLFlfLFlfLFlUfLFlfLFlfLFlUUfLFlfLFlfLFl"
