@@ -1,5 +1,7 @@
 module Permutation where
 
+import Modular
+
 import qualified Data.List as L
 import qualified Data.Map as M
 
@@ -32,10 +34,10 @@ pp zs =
 -- Instantiating type classes
 ------
 
--- Using the Num Class instead of the Group Class in order to use $(*)$ for multiplication
+-- Using the Num Class to (ab)use $(*)$ for multiplication
 -- Also allows writing $1$ for the identity permutation
 instance Ord a => Num (Permutation a) where
-  o * q = pp [(x, o ?. q ?. x) | x <- supp o ++ supp q]
+  o * q = pp [(x, o ?. q ?. x) | x <- support o ++ support q]
   fromInteger 1 = P M.empty
   _ + _ = error "(Permutation a).+: not applicable"
   negate _ = error "(Permutation a).negate: not applicable"
@@ -59,15 +61,6 @@ showMultiline g
 instance (Ord a, Show a) => Show (Permutation a) where
   show = showMultiline
 
--- Point and set-wise applications of permuations
-infixr 1 ?.
-(?.) :: Ord a => Permutation a -> a -> a
-o ?. x = toFunction o x
-
-infixr 1 ?-
-(?-) :: Ord a => Permutation a -> [a] -> [a]
-o ?- xs = [o ?. x | x <- xs]
-
 ------
 -- Useful mathematical functions of permutations
 ------
@@ -82,23 +75,32 @@ infixl 8 ^-
 (^-) :: (Ord a, Integral b) => Permutation a -> b -> Permutation a
 o ^- n = inverseP o ^ n
 
--- Conjugation of two permutations
-infix 8 ?^
+-- Point and set-wise applications of permuations
+infixr 1 ?.
+(?.) :: Ord a => Permutation a -> a -> a
+o ?. x = toFunction o x
 
-(?^) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o ?^ q = undefined
+infixr 1 ?-
+(?-) :: Ord a => Permutation a -> [a] -> [a]
+o ?- xs = [o ?. x | x <- xs]
+
+-- Conjugation of two permutations
+infix 8 ?^?
+
+(?^?) :: Ord a => Permutation a -> Permutation a -> Permutation a
+o ?^? q = q ^-1 * o * q
 
 -- Commutator of two perumutations
 infix 7 >?<
 
 (>?<) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o >?< q = o ^- 1 * q ^- 1 * o * q
+o >?< q = o ^- 1 * q ^-1 * o * q
 
-parity :: Ord a => Permutation a -> Int
-parity o = foldr ((+) . (+ 1) . length) 0 (toCycles o) `mod` 2
+parity :: Ord a => Permutation a -> Mod2
+parity o = M2 $ foldr ((+) . (+ 1) . toInteger . length) 0 (toCycles o)
 
-sgn :: Ord a => Permutation a -> Int
-sgn = ((-1) ^) . parity
+sgn :: (Ord a, Integral b) => Permutation a -> b
+sgn = ((-1) ^) . toIntegral . parity
 
 orderE :: Ord a => Permutation a -> Int
 orderE = L.foldl' lcm 1 . map length . toCycles
@@ -106,15 +108,20 @@ orderE = L.foldl' lcm 1 . map length . toCycles
 orderS :: Ord a => [Permutation a] -> Int
 orderS = L.foldl' lcm 1 . map orderE
 
+
+-- >>> o = p [[1,2,3],[4,5],[6,7,8,9]]
+-- >>> cycleOf2 4 o
+-- [4,5]
+
 cycleOf :: Ord a => a -> Permutation a -> [a]
-cycleOf x o = cycleOf' x []
+cycleOf x o = cycleThrough x
   where
-    cycleOf' y ys = let y' = o ?. y in if y' == x then reverse (y : ys) else cycleOf' y' (y : ys)
+    cycleThrough y = let y' = o ?. y in if y' == x then [y] else y : cycleThrough y'
 
 -- The support of a permutation (the set of non-fixed points)
 -- (Works for permutations created using the supplied constructors)
-supp :: Ord a => Permutation a -> [a]
-supp (P g) = M.keys g
+support :: Ord a => Permutation a -> [a]
+support (P g) = M.keys g
 
 -- Given z, decompose a permutation into the product of transpositions of the form (z x)
 -- This can be done for any permutation and any z
