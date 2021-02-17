@@ -4,6 +4,7 @@ import Modular
 
 import qualified Data.List as L
 import qualified Data.Map as M
+import qualified Test.QuickCheck as Q
 
 ------
 -- Permutations are bijections, thought of with a multiplicative group structure which acts from the left on the underlying set
@@ -184,3 +185,15 @@ toCycles o@(P m) = toCycles' (M.keys m)
 
 toFunction :: Ord a => Permutation a -> a -> a
 toFunction (P g) x = M.findWithDefault x x g
+
+------
+-- Testing Instances
+------
+
+-- Permutations cannot be made an instance of QuickCheck.Arbitrary, since they are not aware of the
+-- set they permute on the type-level
+-- I.e. a value with type Permutation Int could be a permutation of any subset of Int
+
+-- Generate a random permutation of the given list
+permutationOf :: Ord a => [a] -> Q.Gen (Permutation a)
+permutationOf xs = pp . zip xs <$> Q.shuffle xs

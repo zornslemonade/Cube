@@ -1,5 +1,7 @@
 module Modular where
 
+import Test.QuickCheck
+
 ------
 -- Defining modular arithmetic types
 ------
@@ -60,3 +62,16 @@ instance ToIntegral Mod3 where
 
 instance ToIntegral Mod4 where
   toIntegral (M4 x) = fromInteger x
+
+------
+-- Testing Instances
+------
+
+instance Arbitrary Mod2 where
+  arbitrary = elements [0,1]
+
+instance Arbitrary Mod3 where
+  arbitrary = elements [0,1,2]
+
+instance Arbitrary Mod4 where
+  arbitrary = elements [0,1,2,3]

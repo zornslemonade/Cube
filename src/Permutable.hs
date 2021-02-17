@@ -4,6 +4,7 @@ import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Map as M
 import Permutation
+import Test.QuickCheck
 
 ------
 -- Defining an Permutable type class
@@ -42,6 +43,9 @@ class (Foldable z) => Permutable z where
 
 newtype Tuple6 a = T6 (a, a, a, a, a, a) deriving (Eq)
 
+t6 :: a -> a -> a -> a -> a -> a -> Tuple6 a
+t6 = (((((T6 .).).).).).(,,,,,)
+
 instance Permutable Tuple6 where
   fromList [a, b, c, d, e, f] = T6 (a, b, c, d, e, f)
   fromList _ = error "Tuple6: Given list does not have exactly 6 elements"
@@ -72,6 +76,9 @@ instance Show a => Show (Tuple6 a) where
 
 -- Newtype for Octuples
 newtype Tuple8 a = T8 (a, a, a, a, a, a, a, a) deriving (Eq)
+
+t8 :: a -> a -> a -> a -> a -> a -> a -> a -> Tuple8 a
+t8 = (((((((T8 .).).).).).).).(,,,,,,,)
 
 instance Permutable Tuple8 where
   fromList [a, b, c, d, e, f, g, h] = T8 (a, b, c, d, e, f, g, h)
@@ -107,6 +114,9 @@ instance Show a => Show (Tuple8 a) where
 
 newtype Tuple12 a = T12 (a, a, a, a, a, a, a, a, a, a, a, a) deriving (Eq)
 
+t12 :: a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> Tuple12 a
+t12 = (((((((((((T12 .).).).).).).).).).).).(,,,,,,,,,,,)
+
 instance Permutable Tuple12 where
   fromList [a, b, c, d, e, f, g, h, i, j, k, l] = T12 (a, b, c, d, e, f, g, h, i, j, k, l)
   fromList _ = error "Tuple12: Given list does not have exactly 12 elements"
@@ -140,3 +150,19 @@ instance Foldable Tuple12 where
 
 instance Show a => Show (Tuple12 a) where
   show (T12 x) = show x
+
+------
+-- Testing Instances
+------
+
+arb :: Arbitrary a => Gen a
+arb = arbitrary
+
+instance Arbitrary a => Arbitrary (Tuple6 a) where
+  arbitrary = t6 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+
+instance Arbitrary a => Arbitrary (Tuple8 a) where
+  arbitrary = t8 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+
+instance Arbitrary a => Arbitrary (Tuple12 a) where
+  arbitrary = t12 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb

@@ -6,6 +6,7 @@ import Data.Maybe (fromMaybe)
 import Modular
 import Permutable
 import Permutation
+import qualified Test.QuickCheck as Q
 
 ------
 -- Defining the CubeConfiguration type
@@ -108,6 +109,9 @@ type VertexO = Tuple8 Mod3
 -- With this representation, each possible such tuple represents a valid configuration of the cubies
 --
 newtype CubeConfiguration = C (CenterP, EdgeP, VertexP, CenterO, EdgeO, VertexO) deriving (Eq)
+
+cube :: CenterP -> EdgeP -> VertexP -> CenterO -> EdgeO -> VertexO -> CubeConfiguration
+cube = (((((C .).).).).).(,,,,,)
 
 instance Show CubeConfiguration where
   show (C (a, b, c, xs, ys, zs)) = L.intercalate "\n" [showInline a, showInline b, showInline c, show xs, show ys, show zs]
@@ -842,3 +846,40 @@ stickerLookupOC =
 
 displayConfigOC :: CubeConfiguration -> IO ()
 displayConfigOC = displayConfigCustom stickerLookupOC colorLookupOC
+
+------
+-- Testing Instances
+------
+
+-- Arbitrary permutations of cubies are just random permutations of the corresponding subset of Integer
+arbCenterP :: Q.Gen CenterP
+arbCenterP = permutationOf [1..6]
+
+arbEdgeP :: Q.Gen EdgeP
+arbEdgeP = permutationOf [1..8]
+
+arbVertexP :: Q.Gen VertexP
+arbVertexP = permutationOf [1..12]
+
+
+-- For orientations, arbitrary elements can be generated via the instances defined for their components
+arbCenterO :: Q.Gen CenterO
+arbCenterO = Q.arbitrary
+
+arbEdgeO :: Q.Gen EdgeO
+arbEdgeO = Q.arbitrary
+
+arbVertexO :: Q.Gen VertexO
+arbVertexO = Q.arbitrary
+
+{-
+>>> Q.generate (Q.arbitrary :: Q.Gen CubeConfiguration)
+(2 6)(3 4 5)
+(2 3 8)(4 7 5)
+(1 5)(3 11)(4 8 10)
+(0,1,0,2,0,1)
+(1,1,0,0,0,1,1,0,0,0,0,1)
+(2,2,0,1,0,2,1,1)
+-}
+instance Q.Arbitrary CubeConfiguration where
+  arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
