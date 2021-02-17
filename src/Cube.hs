@@ -123,7 +123,10 @@ instance Show CubeConfiguration where
 -- Specifically, this right action is given by (x_1, x_2, ... x_n ) *? o = (x_{o(1)}, x_{o(2)}, ..., x_{o(n)})
 -- This gives the group the structure of a direct product of three wreath products, one for the centers, edges, and vertices
 -- Each of these is known as a generalized symmetric group
--- Specifically, it is isomorphic to (Z_6 \wr S_6) X (Z_12 \wr S_12) X (Z_8 wr S_8)
+-- Specifically, it is isomorphic to (Z_4 \wr S_6) X (Z_2 \wr S_12) X (Z_3 wr S_8)
+-- This has order 4^6 * 6! * 2^12 * 12! * 3^8 * 8! = 1530664174762362289520640000
+-- Neglecting center cubie orientation is equivalent to quotienting by Z_4^6 (which is a normal subgroup)
+-- This has order 373697308291592355840000
 instance Semigroup CubeConfiguration where
   (<>) (C (a1, b1, c1, xs1, ys1, zs1)) (C (a2, b2, c2, xs2, ys2, zs2)) = C (a, b, c, xs, ys, zs)
     where
@@ -179,42 +182,55 @@ x #^ n
 -- Explicitly writing out the cube configurations corresponding to the identity plus the single turns of each face
 ------
 
+-- Identity (no change)
 i :: CubeConfiguration
 i = C (1, 1, 1, 0, 0, 0)
 
+-- Up (Clockwise)
 u :: CubeConfiguration
 u = C (1, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
 
+-- Up (Counterclockwise)
 u' :: CubeConfiguration
 u' = C (1, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
 
+-- Front (Clockwise)
 f :: CubeConfiguration
 f = C (1, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
+-- Front (Counterclockwise)
 f' :: CubeConfiguration
 f' = C (1, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
+-- Left (Clockwise)
 l :: CubeConfiguration
 l = C (1, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
+-- Left (Counterclockwise)
 l' :: CubeConfiguration
 l' = C (1, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
+-- Back (Clockwise)
 b :: CubeConfiguration
 b = C (1, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
+-- Back (Counterclockwise)
 b' :: CubeConfiguration
 b' = C (1, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
+-- Right (Clockwise)
 r :: CubeConfiguration
 r = C (1, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
+-- Right (Counterclockwise)
 r' :: CubeConfiguration
 r' = C (1, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
+-- Down (Clockwise)
 d :: CubeConfiguration
 d = C (1, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
 
+-- Down (Counterclockwise)
 d' :: CubeConfiguration
 d' = C (1, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
 
@@ -299,8 +315,13 @@ fromGenericPermutation o = C (a, b, c, xs, ys, zs)
 ------
 
 -- Gives the order of an element within the group of configurations (or, equivalently, within the group of sticker permutations)
+-- Takes into account center orientations
 order :: CubeConfiguration -> Int
 order = orderE . toPermutation
+
+-- Neglects center orientations
+order' :: CubeConfiguration -> Int
+order' (C (a,b,c,xs,ys,zs)) = orderE . toPermutation $ C (a,b,c,0,ys,zs)
 
 ------
 -- Representing sequences of turns
@@ -371,6 +392,20 @@ isSimilarTo (C (a, b, c, xs, ys, zs)) (C (a', b', c', xs', ys', zs')) = t1 && t2
 
 -- An element is legal if it is an element of <u, f, l, b, r, d>
 -- This is equivalent to being similar to the identity
+-- An equivalent characterization is that C (a,b,c,xs,ys,zs) is legal exactly when
+-- a = 1  (The centers are unmoved)
+-- sgn b = sgn c (For each pair of edge cubies swapped, a pair of vertex cubies is also swapped and vice versa)
+-- sgn b = (-1)^(sum xs) (For each pair of edge cubies swapped, a center cubie is turned once and vice versa)
+-- [(-1)^(sum xs) since sum xs is in Z_4]
+-- sum ys = 0 (Edge cubies are flipped in pairs)
+-- sum zs = 0 (Vertex cubies are turned in opposite pairs--if one is turned cw, another is turned ccw)
+-- This means that the Legal Cube Group is isomorphic to the Cube Group quotiented by
+-- S_6
+-- Three copies of Z_2
+-- One copy of Z_3
+-- And so it has order (4^6 * 6! * 2^12 * 12! * 3^8 * 8!) / (6! * 2^3 * 3) = 88580102706155225088000
+-- Ignoring the center orientations means quotienting by Z_4^6 (and no longer quotienting by one copy of Z_2)
+-- This gives order (4^6 * 6! * 2^12 * 12! * 3^8 * 8!) / (4^6 * 6! * 2^2 * 3) = 43252003274489856000
 isLegal :: CubeConfiguration -> Bool
 isLegal = isSimilarTo i
 
@@ -594,21 +629,21 @@ stickerLookup =
 --                 -----------
 --                |   |   |   |
 --                |---+---+---|
---                |   |^ ^|   |
+--                |   |   |   |
 --                |---+---+---|
 --                |   |   |   |
 --                 -----------
 --   -----------   -----------   -----------   -----------
 --  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
 --  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | X |^X^| X | |:::|^:^|:::| |###|^#^|###| | o |^o^| o |
+--  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
 --  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
 --  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
 --   -----------   -----------   -----------   -----------
 --                 -----------
 --                | ~ | ~ | ~ |
 --                |---+---+---|
---                | ~ |^~^| ~ |
+--                | ~ | ~ | ~ |
 --                |---+---+---|
 --                | ~ | ~ | ~ |
 --                 -----------
