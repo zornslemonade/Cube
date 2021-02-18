@@ -110,10 +110,6 @@ orderE = L.foldl' lcm 1 . map length . toCycles
 orderS :: Ord a => [Permutation a] -> Int
 orderS = L.foldl' lcm 1 . map orderE
 
--- >>> o = p [[1,2,3],[4,5],[6,7,8,9]]
--- >>> cycleOf2 4 o
--- [4,5]
-
 cycleOf :: Ord a => a -> Permutation a -> [a]
 cycleOf x o = cycleThrough x
   where
@@ -176,7 +172,7 @@ fromCycles = fmap product . mapM fromCycle
     fromCycle [] = Just 1
     fromCycle cs@(x : xs) = fromPairs $ zip cs $ xs ++ [x]
 
--- | POOP
+-- 
 toCycles :: Ord a => Permutation a -> [[a]]
 toCycles o@(P m) = toCycles' (M.keys m)
   where

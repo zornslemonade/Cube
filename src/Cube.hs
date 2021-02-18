@@ -284,7 +284,7 @@ turnToConfig m =
     D' -> d'
 
 turnsToConfig :: [Turn] -> CubeConfiguration
-turnsToConfig = L.foldr ((#) . turnToConfig) i
+turnsToConfig = L.foldl' (\x y -> x # turnToConfig y) i
 
 -- This function inverts a basic turn
 invertTurn :: Turn -> Turn
