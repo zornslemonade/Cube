@@ -1,6 +1,6 @@
 module SudokuCube where
 
-import Cube ( displayConfigCustom )
+import Cube (displayConfigCustom)
 import qualified Data.Map as M
 
 -- Lookup table that assigns to each color a string used in its visual representation

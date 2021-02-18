@@ -1,6 +1,6 @@
 module Modular where
 
-import Test.QuickCheck
+import Test.Tasty.QuickCheck
 
 ------
 -- Defining modular arithmetic types
@@ -68,10 +68,10 @@ instance ToIntegral Mod4 where
 ------
 
 instance Arbitrary Mod2 where
-  arbitrary = elements [0,1]
+  arbitrary = elements [0, 1]
 
 instance Arbitrary Mod3 where
-  arbitrary = elements [0,1,2]
+  arbitrary = elements [0, 1, 2]
 
 instance Arbitrary Mod4 where
-  arbitrary = elements [0,1,2,3]
+  arbitrary = elements [0, 1, 2, 3]

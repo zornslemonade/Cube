@@ -1,2 +1,13 @@
+import CubeTest
+import Test.Tasty
+
+-- Run all tests
+fullTests :: TestTree
+fullTests =
+  testGroup
+    "All Tests"
+    [ cubeTests
+    ]
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = defaultMain fullTests

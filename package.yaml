@@ -21,7 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/zorn
 dependencies:
 - base >= 4.7 && < 5
 - containers
-- QuickCheck
+- tasty
+- tasty-quickcheck
 
 library:
   source-dirs: src
@@ -35,4 +36,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - cube
+    - Cube

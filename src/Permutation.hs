@@ -1,10 +1,9 @@
 module Permutation where
 
-import Modular
-
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Test.QuickCheck as Q
+import Modular
+import qualified Test.Tasty.QuickCheck as Q
 
 ------
 -- Permutations are bijections, thought of with a multiplicative group structure which acts from the left on the underlying set
@@ -78,10 +77,12 @@ o ^- n = inverseP o ^ n
 
 -- Point and set-wise applications of permuations
 infixr 1 ?.
+
 (?.) :: Ord a => Permutation a -> a -> a
 o ?. x = toFunction o x
 
 infixr 1 ?-
+
 (?-) :: Ord a => Permutation a -> [a] -> [a]
 o ?- xs = [o ?. x | x <- xs]
 
@@ -89,13 +90,13 @@ o ?- xs = [o ?. x | x <- xs]
 infix 8 ?^?
 
 (?^?) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o ?^? q = q ^-1 * o * q
+o ?^? q = q ^- 1 * o * q
 
 -- Commutator of two perumutations
 infix 7 >?<
 
 (>?<) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o >?< q = o ^- 1 * q ^-1 * o * q
+o >?< q = o ^- 1 * q ^- 1 * o * q
 
 parity :: Ord a => Permutation a -> Mod2
 parity o = M2 $ foldr ((+) . (+ 1) . toInteger . length) 0 (toCycles o)
@@ -108,7 +109,6 @@ orderE = L.foldl' lcm 1 . map length . toCycles
 
 orderS :: Ord a => [Permutation a] -> Int
 orderS = L.foldl' lcm 1 . map orderE
-
 
 -- >>> o = p [[1,2,3],[4,5],[6,7,8,9]]
 -- >>> cycleOf2 4 o

@@ -4,7 +4,7 @@ import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Map as M
 import Permutation
-import Test.QuickCheck
+import Test.Tasty.QuickCheck
 
 ------
 -- Defining an Permutable type class
@@ -44,7 +44,7 @@ class (Foldable z) => Permutable z where
 newtype Tuple6 a = T6 (a, a, a, a, a, a) deriving (Eq)
 
 t6 :: a -> a -> a -> a -> a -> a -> Tuple6 a
-t6 = (((((T6 .).).).).).(,,,,,)
+t6 = (((((T6 .) .) .) .) .) . (,,,,,)
 
 instance Permutable Tuple6 where
   fromList [a, b, c, d, e, f] = T6 (a, b, c, d, e, f)
@@ -63,7 +63,7 @@ instance Permutable Tuple6 where
 instance Num a => Num (Tuple6 a) where
   (T6 (a, b, c, d, e, f)) + (T6 (a', b', c', d', e', f')) = T6 (a + a', b + b', c + c', d + d', e + e', f + f')
   (T6 (a, b, c, d, e, f)) * (T6 (a', b', c', d', e', f')) = T6 (a * a', b * b', c * c', d * d', e * e', f * f')
-  negate (T6 (a, b, c, d, e, f)) = T6 (-a, -b, -c, -d, -e, -f)
+  negate (T6 (a, b, c, d, e, f)) = T6 (- a, - b, - c, - d, - e, - f)
   abs (T6 (a, b, c, d, e, f)) = T6 (abs a, abs b, abs c, abs d, abs e, abs f)
   signum = error "(Tuple6).signum: not applicable"
   fromInteger n = T6 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
@@ -78,7 +78,7 @@ instance Show a => Show (Tuple6 a) where
 newtype Tuple8 a = T8 (a, a, a, a, a, a, a, a) deriving (Eq)
 
 t8 :: a -> a -> a -> a -> a -> a -> a -> a -> Tuple8 a
-t8 = (((((((T8 .).).).).).).).(,,,,,,,)
+t8 = (((((((T8 .) .) .) .) .) .) .) . (,,,,,,,)
 
 instance Permutable Tuple8 where
   fromList [a, b, c, d, e, f, g, h] = T8 (a, b, c, d, e, f, g, h)
@@ -99,7 +99,7 @@ instance Permutable Tuple8 where
 instance Num a => Num (Tuple8 a) where
   (T8 (a, b, c, d, e, f, g, h)) + (T8 (a', b', c', d', e', f', g', h')) = T8 (a + a', b + b', c + c', d + d', e + e', f + f', g + g', h + h')
   (T8 (a, b, c, d, e, f, g, h)) * (T8 (a', b', c', d', e', f', g', h')) = T8 (a * a', b * b', c * c', d * d', e * e', f * f', g * g', h * h')
-  negate (T8 (a, b, c, d, e, f, g, h)) = T8 (-a, -b, -c, -d, -e, -f, -g, -h)
+  negate (T8 (a, b, c, d, e, f, g, h)) = T8 (- a, - b, - c, - d, - e, - f, - g, - h)
   abs (T8 (a, b, c, d, e, f, g, h)) = T8 (abs a, abs b, abs c, abs d, abs e, abs f, abs g, abs h)
   signum = error "(Tuple8).signum: not applicable"
   fromInteger n = T8 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
@@ -115,7 +115,7 @@ instance Show a => Show (Tuple8 a) where
 newtype Tuple12 a = T12 (a, a, a, a, a, a, a, a, a, a, a, a) deriving (Eq)
 
 t12 :: a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> Tuple12 a
-t12 = (((((((((((T12 .).).).).).).).).).).).(,,,,,,,,,,,)
+t12 = (((((((((((T12 .) .) .) .) .) .) .) .) .) .) .) . (,,,,,,,,,,,)
 
 instance Permutable Tuple12 where
   fromList [a, b, c, d, e, f, g, h, i, j, k, l] = T12 (a, b, c, d, e, f, g, h, i, j, k, l)
@@ -140,7 +140,7 @@ instance Permutable Tuple12 where
 instance Num a => Num (Tuple12 a) where
   (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) + (T12 (a', b', c', d', e', f', g', h', i', j', k', l')) = T12 (a + a', b + b', c + c', d + d', e + e', f + f', g + g', h + h', i + i', j + j', k + k', l + l')
   (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) * (T12 (a', b', c', d', e', f', g', h', i', j', k', l')) = T12 (a * a', b * b', c * c', d * d', e * e', f * f', g * g', h * h', i * i', j * j', k * k', l * l')
-  negate (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (-a, -b, -c, -d, -e, -f, -g, -h, -i, -j, -k, -l)
+  negate (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (- a, - b, - c, - d, - e, - f, - g, - h, - i, - j, - k, - l)
   abs (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (abs a, abs b, abs c, abs d, abs e, abs f, abs g, abs h, abs i, abs j, abs k, abs l)
   signum = error "(Tuple12).signum: not applicable"
   fromInteger n = T12 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
