@@ -1,7 +1,7 @@
 name:                Cube
 version:             0.1.0.0
 github:              "zornslemonade/Cube"
-license:             BSD3
+license:             MIT
 author:              "Grant Goodman"
 maintainer:          "zornslemonade@gmail.com"
 copyright:           "2021 Grant Goodman"
@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/zorn
 dependencies:
 - base >= 4.7 && < 5
 - containers
+- groups
 - tasty
 - tasty-quickcheck
 

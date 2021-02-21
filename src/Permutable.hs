@@ -1,4 +1,23 @@
-module Permutable where
+-- |
+-- Module      :  Permutable
+-- Copyright   :  (c) Grant Goodman 2021
+-- Description :  Implementation of the Generalized Symmetric Group
+-- License     :  MIT
+-- Maintainer  :  zornslemonade@gmail.com
+-- Portability :  Experimental
+--
+-- A module which implements the generalized symmetric group for a few specific orders.
+module Permutable (
+  Permutable (..),
+  -- * Tuple Newtypes
+  Tuple6 (..),
+  Tuple8 (..),
+  Tuple12 (..),
+  -- * Alternate Constructors
+  t6,
+  t8,
+  t12
+) where
 
 import Data.Foldable
 import qualified Data.List as L
@@ -25,11 +44,12 @@ class (Foldable z) => Permutable z where
   toPairList :: Integral b => z a -> [(b, a)]
   toPairList = zip [1 ..] . toList
 
-  -- Right and left action by permutation
+  -- | Right action by permutations
   infixr 7 *?
   (*?) :: Integral b => z a -> Permutation b -> z a
   x *? o = (o ^- 1) ?* x
 
+  -- | Left action by permutations
   infixl 7 ?*
   (?*) :: Integral b => Permutation b -> z a -> z a
   o ?* x = fromList $ M.elems $ M.fromList [(o ?. n, y) | (n, y) <- toPairList x]

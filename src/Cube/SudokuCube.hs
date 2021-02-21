@@ -1,6 +1,6 @@
-module SudokuCube where
+module Cube.SudokuCube where
 
-import Cube (displayConfigCustom)
+import Cube (showCubeCustom)
 import qualified Data.Map as M
 
 -- Lookup table that assigns to each color a string used in its visual representation
@@ -123,4 +123,4 @@ stickerLookupSudoku =
 --                | 7 | 8 | 9 |
 --                 -----------
 
-displayConfigSudoku = displayConfigCustom stickerLookupSudoku colorLookupSudoku
+showCubeSudoku = showCubeCustom $ M.fromAscList [(x, colorLookupSudoku M.! (stickerLookupSudoku M.! x)) | x <- [1..72]]

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: db37da1632ea9d1a8a645c2357200a37e6c999975d1db68d6d26013028281b25
+-- hash: b8f766b7e99cb80f4ef4950c6a66233eecfe1f3fa41785b6d48fb41a41c8ca58
 
 name:           Cube
 version:        0.1.0.0
@@ -14,7 +14,7 @@ bug-reports:    https://github.com/zornslemonade/Cube/issues
 author:         Grant Goodman
 maintainer:     zornslemonade@gmail.com
 copyright:      2021 Grant Goodman
-license:        BSD3
+license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -27,10 +27,10 @@ source-repository head
 library
   exposed-modules:
       Cube
+      Cube.SudokuCube
       Modular
       Permutable
       Permutation
-      SudokuCube
   other-modules:
       Paths_Cube
   hs-source-dirs:
@@ -38,6 +38,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , groups
     , tasty
     , tasty-quickcheck
   default-language: Haskell2010
@@ -55,6 +56,7 @@ test-suite cube-test
       Cube
     , base >=4.7 && <5
     , containers
+    , groups
     , tasty
     , tasty-quickcheck
   default-language: Haskell2010
