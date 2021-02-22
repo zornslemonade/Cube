@@ -210,39 +210,8 @@ showCubeConfig :: CubeConfiguration -> String
 showCubeConfig (Cube (a, b, c, xs, ys, zs)) = L.intercalate "\n" [showInline a, showInline b, showInline c, show xs, show ys, show zs]
 
 instance Show CubeConfiguration where
-  show = showCubeConfig
-
--- | Extra newtype that allows for an alternate, more visual Show instance for cube configurations
--- 
--- E.g. the identity configuration is displayed as
---
--- >                -----------
--- >               |   |   |   |
--- >               |---+---+---|
--- >               |   |^ ^|   |
--- >               |---+---+---|
--- >               |   |   |   |
--- >                -----------
--- >  -----------   -----------   -----------   -----------
--- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
--- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
--- > | X |^X^| X | |:::|^:^|:::| |###|^#^|###| | o |^o^| o |
--- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
--- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
--- >  -----------   -----------   -----------   -----------
--- >                -----------
--- >               | ~ | ~ | ~ |
--- >               |---+---+---|
--- >               | ~ |^~^| ~ |
--- >               |---+---+---|
--- >               | ~ | ~ | ~ |
--- >                -----------
---
-newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq)
-
-instance Show ASCIICube where
-  show (ShowCube g) = showCube g
-
+  show = showCubeConfig 
+  
 ------
 -- Instantiating typeclasses
 ------
@@ -575,10 +544,6 @@ fromNumericPermutation o = Cube (a, b, c, xs, ys, zs)
 order :: CubeConfiguration -> Int
 order = Permutation.order . toPermutation
 
--- Neglects center orientations
-order' :: CubeConfiguration -> Int
-order' (Cube (a, b, c, xs, ys, zs)) = Permutation.order . toPermutation $ Cube (a, b, c, 0, ys, zs)
-
 ------
 -- Solving the Rubik's Cube
 ------
@@ -743,171 +708,41 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 -- Functions to display ASCII art cubes
 ------
 
--- Lookup table that assigns to each color a string used in its visual representation
--- By default, sticker do not track the orientation of center cubies
+-- | Extra newtype that allows for an alternate, more visual Show instance for cube configurations
+-- 
+-- E.g. the identity configuration is displayed as
+--
+-- >                -----------
+-- >               |   |   |   |
+-- >               |---+---+---|
+-- >               |   |^ ^|   |
+-- >               |---+---+---|
+-- >               |   |   |   |
+-- >                -----------
+-- >  -----------   -----------   -----------   -----------
+-- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
+-- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
+-- > | X |^X^| X | |:::|^:^|:::| |###|^#^|###| | o |^o^| o |
+-- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
+-- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
+-- >  -----------   -----------   -----------   -----------
+-- >                -----------
+-- >               | ~ | ~ | ~ |
+-- >               |---+---+---|
+-- >               | ~ |^~^| ~ |
+-- >               |---+---+---|
+-- >               | ~ | ~ | ~ |
+-- >                -----------
+--
+newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq)
+
+instance Show ASCIICube where
+  show (ShowCube g) = showCube g
+
+-- Lookup table that assigns to each sticker color a string used in its visual representation
+-- This contains additional 'colors' used to represent the orientation of center cubies
 colorLookup :: M.Map Integer String
 colorLookup =
-  M.fromAscList
-    [ (1, "   "),
-      (2, ":::"),
-      (3, " X "),
-      (4, " o "),
-      (5, "###"),
-      (6, " ~ ")
-    ]
-
--- Lookup table that assigns a sticker color to each cubie face
-stickerLookup :: M.Map Integer Integer
-stickerLookup =
-  M.fromAscList
-    [ (1, 1),
-      (2, 2),
-      (3, 3),
-      (4, 4),
-      (5, 5),
-      (6, 6),
-      (7, 1),
-      (8, 2),
-      (9, 3),
-      (10, 4),
-      (11, 5),
-      (12, 6),
-      (13, 1),
-      (14, 2),
-      (15, 3),
-      (16, 4),
-      (17, 5),
-      (18, 6),
-      (19, 1),
-      (20, 2),
-      (21, 3),
-      (22, 4),
-      (23, 5),
-      (24, 6),
-      (25, 1),
-      (26, 1),
-      (27, 1),
-      (28, 1),
-      (29, 2),
-      (30, 4),
-      (31, 4),
-      (32, 2),
-      (33, 6),
-      (34, 6),
-      (35, 6),
-      (36, 6),
-      (37, 2),
-      (38, 3),
-      (39, 4),
-      (40, 5),
-      (41, 3),
-      (42, 3),
-      (43, 5),
-      (44, 5),
-      (45, 2),
-      (46, 5),
-      (47, 4),
-      (48, 3),
-      (49, 1),
-      (50, 1),
-      (51, 1),
-      (52, 1),
-      (53, 6),
-      (54, 6),
-      (55, 6),
-      (56, 6),
-      (57, 2),
-      (58, 3),
-      (59, 4),
-      (60, 5),
-      (61, 3),
-      (62, 2),
-      (63, 5),
-      (64, 4),
-      (65, 3),
-      (66, 4),
-      (67, 5),
-      (68, 2),
-      (69, 2),
-      (70, 5),
-      (71, 4),
-      (72, 3)
-    ]
-
---  What the Cube looks like in its default state:
---                 -----------
---                |   |   |   |
---                |---+---+---|
---                |   |   |   |
---                |---+---+---|
---                |   |   |   |
---                 -----------
---   -----------   -----------   -----------   -----------
---  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
---   -----------   -----------   -----------   -----------
---                 -----------
---                | ~ | ~ | ~ |
---                |---+---+---|
---                | ~ | ~ | ~ |
---                |---+---+---|
---                | ~ | ~ | ~ |
---                 -----------
---
-
--- Generates the ASCII art representation of a cube configuration
--- Takes as input a string for each sticker
-drawCube :: [[Char]] -> [[Char]]
-drawCube xs = case xs of
-  [c10, c20, c30, c40, c50, c60, c11, c21, c31, c41, c51, c61, c12, c22, c32, c42, c52, c62, c13, c23, c33, c43, c53, c63, e10, e20, e30, e40, e50, e60, e70, e80, e90, e100, e110, e120, e11, e21, e31, e41, e51, e61, e71, e81, e91, e101, e111, e121, v10, v20, v30, v40, v50, v60, v70, v80, v11, v21, v31, v41, v51, v61, v71, v81, v12, v22, v32, v42, v52, v62, v72, v82] ->
-    [ "                 -----------                             ",
-      "                |" ++ v20 ++ "|" ++ e30 ++ "|" ++ v30 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ e20 ++ "|" ++ c10 ++ "|" ++ e40 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ v10 ++ "|" ++ e10 ++ "|" ++ v40 ++ "|                            ",
-      "                 -----------                             ",
-      "   -----------   -----------   -----------   ----------- ",
-      "  |" ++ v21 ++ "|" ++ e21 ++ "|" ++ v12 ++ "| |" ++ v11 ++ "|" ++ e11 ++ "|" ++ v42 ++ "| |" ++ v41 ++ "|" ++ e41 ++ "|" ++ v32 ++ "| |" ++ v31 ++ "|" ++ e31 ++ "|" ++ v22 ++ "|",
-      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
-      "  |" ++ e61 ++ "|" ++ c30 ++ "|" ++ e51 ++ "| |" ++ e50 ++ "|" ++ c20 ++ "|" ++ e80 ++ "| |" ++ e81 ++ "|" ++ c50 ++ "|" ++ e71 ++ "| |" ++ e70 ++ "|" ++ c40 ++ "|" ++ e60 ++ "|",
-      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
-      "  |" ++ v82 ++ "|" ++ e121 ++ "|" ++ v51 ++ "| |" ++ v52 ++ "|" ++ e91 ++ "|" ++ v61 ++ "| |" ++ v62 ++ "|" ++ e101 ++ "|" ++ v71 ++ "| |" ++ v72 ++ "|" ++ e111 ++ "|" ++ v81 ++ "|",
-      "   -----------   -----------   -----------   ----------- ",
-      "                 -----------                             ",
-      "                |" ++ v50 ++ "|" ++ e90 ++ "|" ++ v60 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ e120 ++ "|" ++ c60 ++ "|" ++ e100 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ v80 ++ "|" ++ e110 ++ "|" ++ v70 ++ "|                            ",
-      "                 -----------                             "
-    ]
-  _ -> ["Attempted to draw a cube without the correct number of stickers :("]
-
-
--- | Creates the list of string representing the cube configuration as ASCII art
--- Takes as input a Map which sends the numbers 1 - 72 to strings. Each string should be three characteres long.
--- These serve as the stickers for the ASCII art. The stickers are enumerated just as in the definition of 'toNumericPermutation'.
-showCubeCustom :: M.Map Integer String -> CubeConfiguration -> String
-showCubeCustom lookupMap g =
-  let o = toNumericPermutation g
-      stickerColors = M.elems $ M.fromList [(o ?. n, x) | (n, x) <- M.toList lookupMap]
-   in L.intercalate "\n" $ drawCube stickerColors
-
-showCube :: CubeConfiguration -> String
-showCube = showCubeCustom $ M.fromAscList [(x,colorLookup M.! (stickerLookup M.! x))  | x <- [1..72]]
-
-------
--- Displaying the Cube with oriented centers
-------
-
--- Lookup table that assigns to each color a string used in its visual representation
--- This contains additional 'colors' used to represent the orientation of center cubies
-colorLookupOC :: M.Map Integer String
-colorLookupOC =
   M.fromAscList
     [ (1, "   "),
       (2, ":::"),
@@ -942,8 +777,8 @@ colorLookupOC =
     ]
 
 -- Lookup table that assigns a sticker color to each cubie face
-stickerLookupOC :: M.Map Integer Integer
-stickerLookupOC =
+stickerLookup :: M.Map Integer Integer
+stickerLookup =
   M.fromAscList
     [ (1, 7),
       (2, 11),
@@ -1019,29 +854,48 @@ stickerLookupOC =
       (72, 3)
     ]
 
---  What the Cube looks like in its default state:
---                 -----------
---                |   |   |   |
---                |---+---+---|
---                |   |^ ^|   |
---                |---+---+---|
---                |   |   |   |
---                 -----------
---   -----------   -----------   -----------   -----------
---  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | X |^X^| X | |:::|^:^|:::| |###|^#^|###| | o |^o^| o |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
---   -----------   -----------   -----------   -----------
---                 -----------
---                | ~ | ~ | ~ |
---                |---+---+---|
---                | ~ |^~^| ~ |
---                |---+---+---|
---                | ~ | ~ | ~ |
---                 -----------
---
+-- Generates the ASCII art representation of a cube configuration
+-- Takes as input a string for each individual sticker
+drawCube :: [[Char]] -> [[Char]]
+drawCube xs = case xs of
+  [c10, c20, c30, c40, c50, c60, c11, c21, c31, c41, c51, c61, c12, c22, c32, c42, c52, c62, c13, c23, c33, c43, c53, c63, e10, e20, e30, e40, e50, e60, e70, e80, e90, e100, e110, e120, e11, e21, e31, e41, e51, e61, e71, e81, e91, e101, e111, e121, v10, v20, v30, v40, v50, v60, v70, v80, v11, v21, v31, v41, v51, v61, v71, v81, v12, v22, v32, v42, v52, v62, v72, v82] ->
+    [ "                 -----------                             ",
+      "                |" ++ v20 ++ "|" ++ e30 ++ "|" ++ v30 ++ "|                            ",
+      "                |---+---+---|                            ",
+      "                |" ++ e20 ++ "|" ++ c10 ++ "|" ++ e40 ++ "|                            ",
+      "                |---+---+---|                            ",
+      "                |" ++ v10 ++ "|" ++ e10 ++ "|" ++ v40 ++ "|                            ",
+      "                 -----------                             ",
+      "   -----------   -----------   -----------   ----------- ",
+      "  |" ++ v21 ++ "|" ++ e21 ++ "|" ++ v12 ++ "| |" ++ v11 ++ "|" ++ e11 ++ "|" ++ v42 ++ "| |" ++ v41 ++ "|" ++ e41 ++ "|" ++ v32 ++ "| |" ++ v31 ++ "|" ++ e31 ++ "|" ++ v22 ++ "|",
+      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
+      "  |" ++ e61 ++ "|" ++ c30 ++ "|" ++ e51 ++ "| |" ++ e50 ++ "|" ++ c20 ++ "|" ++ e80 ++ "| |" ++ e81 ++ "|" ++ c50 ++ "|" ++ e71 ++ "| |" ++ e70 ++ "|" ++ c40 ++ "|" ++ e60 ++ "|",
+      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
+      "  |" ++ v82 ++ "|" ++ e121 ++ "|" ++ v51 ++ "| |" ++ v52 ++ "|" ++ e91 ++ "|" ++ v61 ++ "| |" ++ v62 ++ "|" ++ e101 ++ "|" ++ v71 ++ "| |" ++ v72 ++ "|" ++ e111 ++ "|" ++ v81 ++ "|",
+      "   -----------   -----------   -----------   ----------- ",
+      "                 -----------                             ",
+      "                |" ++ v50 ++ "|" ++ e90 ++ "|" ++ v60 ++ "|                            ",
+      "                |---+---+---|                            ",
+      "                |" ++ e120 ++ "|" ++ c60 ++ "|" ++ e100 ++ "|                            ",
+      "                |---+---+---|                            ",
+      "                |" ++ v80 ++ "|" ++ e110 ++ "|" ++ v70 ++ "|                            ",
+      "                 -----------                             "
+    ]
+  _ -> ["Attempted to draw a cube without the correct number of stickers :("]
+
+
+-- | Creates the list of string representing the cube configuration as ASCII art
+-- Takes as input a Map which sends the numbers 1 - 72 to strings. Each string should be three characteres long.
+-- These serve as the stickers for the ASCII art. The stickers are enumerated just as in the definition of 'toNumericPermutation'.
+showCubeCustom :: M.Map Integer String -> CubeConfiguration -> String
+showCubeCustom lookupMap g =
+  let o = toNumericPermutation g
+      stickerColors = M.elems $ M.fromList [(o ?. n, x) | (n, x) <- M.toList lookupMap]
+   in L.intercalate "\n" $ drawCube stickerColors
+
+-- | Uses the default assignment of strings to colors
+showCube :: CubeConfiguration -> String
+showCube = showCubeCustom $ M.fromAscList [(x,colorLookup M.! (stickerLookup M.! x))  | x <- [1..72]]
 
 ------
 -- Testing Instances

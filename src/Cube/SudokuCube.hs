@@ -1,13 +1,27 @@
-module Cube.SudokuCube where
+-- |
+-- Module      :  SudokuCube
+-- Copyright   :  (c) Grant Goodman 2021
+-- Description :  Example using the Rubik's Cube Group
+-- License     :  MIT
+-- Maintainer  :  zornslemonade@gmail.com
+-- Portability :  Experimental
+--
+-- This module gives an example of a custom sticker set.
+-- The stickers of a sudoku cube are labeled 1-9 such that each face forms a valid
+-- sudoku puzzle.
+module Cube.SudokuCube
+  ( ASCIISudokuCube,
+    showSudokuCube,
+  )where
 
-import Cube (showCubeCustom)
+import Cube (showCubeCustom, CubeConfiguration)
 import qualified Data.Map as M
 
 -- Lookup table that assigns to each color a string used in its visual representation
--- For a Sudoku cube, these are just the numbers 1 to 9
+-- For a  cube, these are just the numbers 1 to 9
 -- The center orientations are not distinguished
-colorLookupSudoku :: M.Map Integer String
-colorLookupSudoku =
+colorLookup :: M.Map Integer String
+colorLookup =
   M.fromAscList
     [ (1, " 1 "),
       (2, " 2 "),
@@ -21,10 +35,10 @@ colorLookupSudoku =
     ]
 
 -- Lookup table that assigns a sticker color to each cubie face
--- For a Sudoku cube, these are assigned such that the stickers on each face
--- make a valid Sudoku puzzle
-stickerLookupSudoku :: M.Map Integer Integer
-stickerLookupSudoku =
+-- For a cube, these are assigned such that the stickers on each face
+-- make a valid  puzzle
+stickerLookup :: M.Map Integer Integer
+stickerLookup =
   M.fromAscList
     [ (1, 1),
       (2, 5),
@@ -100,27 +114,34 @@ stickerLookupSudoku =
       (72, 6)
     ]
 
---  What the Cube looks like in its default state:
---                 -----------
---                | 3 | 8 | 7 |
---                |---+---+---|
---                | 2 | 1 | 9 |
---                |---+---+---|
---                | 5 | 6 | 4 |
---                 -----------
---   -----------   -----------   -----------   -----------
---  | 1 | 4 | 2 | | 4 | 3 | 6 | | 9 | 7 | 1 | | 3 | 9 | 7 |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | 8 | 7 | 3 | | 7 | 5 | 1 | | 2 | 4 | 8 | | 6 | 1 | 5 |
---  |---+---+---| |---+---+---| |---+---+---| |---+---+---|
---  | 6 | 9 | 5 | | 9 | 2 | 8 | | 5 | 3 | 6 | | 8 | 2 | 4 |
---   -----------   -----------   -----------   -----------
---                 -----------
---                | 1 | 5 | 2 |
---                |---+---+---|
---                | 4 | 6 | 3 |
---                |---+---+---|
---                | 7 | 8 | 9 |
---                 -----------
+showSudokuCube :: CubeConfiguration -> String
+showSudokuCube = showCubeCustom $ M.fromAscList [(x, colorLookup M.! (stickerLookup M.! x)) | x <- [1..72]]
 
-showCubeSudoku = showCubeCustom $ M.fromAscList [(x, colorLookupSudoku M.! (stickerLookupSudoku M.! x)) | x <- [1..72]]
+-- |
+-- What the Cube looks like in its default state:
+--
+-- >                -----------
+-- >               | 3 | 8 | 7 |
+-- >               |---+---+---|
+-- >               | 2 | 1 | 9 |
+-- >               |---+---+---|
+-- >               | 5 | 6 | 4 |
+-- >                -----------
+-- >  -----------   -----------   -----------   -----------
+-- > | 1 | 4 | 2 | | 4 | 3 | 6 | | 9 | 7 | 1 | | 3 | 9 | 7 |
+-- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
+-- > | 8 | 7 | 3 | | 7 | 5 | 1 | | 2 | 4 | 8 | | 6 | 1 | 5 |
+-- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
+-- > | 6 | 9 | 5 | | 9 | 2 | 8 | | 5 | 3 | 6 | | 8 | 2 | 4 |
+-- >  -----------   -----------   -----------   -----------
+-- >                -----------
+-- >               | 1 | 5 | 2 |
+-- >               |---+---+---|
+-- >               | 4 | 6 | 3 |
+-- >               |---+---+---|
+-- >               | 7 | 8 | 9 |
+-- >                -----------  
+newtype ASCIISudokuCube = ShowSudokuCube CubeConfiguration deriving Eq
+
+instance Show ASCIISudokuCube where
+  show (ShowSudokuCube g) = showSudokuCube g
