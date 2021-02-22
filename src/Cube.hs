@@ -45,6 +45,7 @@ module Cube
     -- * Basic operations
     (#),
     (#^),
+    (#^#),
     (>#<),
 
     -- * Permutation representations
@@ -260,9 +261,9 @@ instance Show ASCIICube where
 instance Semigroup CubeConfiguration where
   (Cube (a1, b1, c1, xs1, ys1, zs1)) <> (Cube (a2, b2, c2, xs2, ys2, zs2)) = Cube (a, b, c, xs, ys, zs)
     where
-      a = a1 * a2
-      b = b1 * b2
-      c = c1 * c2
+      a = a1 ? a2
+      b = b1 ? b2
+      c = c1 ? c2
       xs = xs1 *? a2 + xs2
       ys = ys1 *? b2 + ys2
       zs = zs1 *? c2 + zs2
@@ -274,9 +275,9 @@ instance Monoid CubeConfiguration where
 instance Group CubeConfiguration where
   invert (Cube (a, b, c, xs, ys, zs)) = Cube (a', b', c', xs', ys', zs')
     where
-      a' = a ^- 1
-      b' = b ^- 1
-      c' = c ^- 1
+      a' = a ?^ (-1)
+      b' = b ?^ (-1)
+      c' = c ?^ (-1)
       xs' = a ?* (- xs)
       ys' = b ?* (- ys)
       zs' = c ?* (- zs)
@@ -290,12 +291,6 @@ infixl 7 #
 (#) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
 x # y = x <> y
 
--- | Commutator of cube configurations
-infix 7 >#<
-
-(>#<) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-x >#< y = invert x # invert y # x # y
-
 -- | Exponentiation (including negative exponents)
 infixl 8 #^
 
@@ -306,61 +301,77 @@ x #^ n
   | even n = (x # x) #^ div n 2
   | otherwise = x # (x # x) #^ div n 2
 
+-- | Conjugation of cube configurations, i.e.,
+--
+-- > g #^# h == h #^ (-1) # g # h
+infix 8 #^#
+
+(#^#) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
+x #^# y = invert y # x # y
+
+-- | Commutator of cube configurations, i.e.,
+--
+-- > g >#< h == g #^ (-1) # h #^ (-1) # g # h
+infix 7 >#<
+
+(>#<) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
+x >#< y = invert x # invert y # x # y
+
 ------
 -- Explicitly writing out the cube configurations corresponding to the identity plus the single Turn of each face
 ------
 
 -- Identity (no change)
 i :: CubeConfiguration
-i = Cube (1, 1, 1, 0, 0, 0)
+i = Cube (one, one, one, 0, 0, 0)
 
 -- Up (Clockwise)
 u :: CubeConfiguration
-u = Cube (1, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
+u = Cube (one, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
 
 -- Up (Counterclockwise)
 u' :: CubeConfiguration
-u' = Cube (1, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
+u' = Cube (one, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
 
 -- Front (Clockwise)
 f :: CubeConfiguration
-f = Cube (1, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f = Cube (one, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Front (Counterclockwise)
 f' :: CubeConfiguration
-f' = Cube (1, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f' = Cube (one, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Left (Clockwise)
 l :: CubeConfiguration
-l = Cube (1, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l = Cube (one, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Left (Counterclockwise)
 l' :: CubeConfiguration
-l' = Cube (1, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l' = Cube (one, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Back (Clockwise)
 b :: CubeConfiguration
-b = Cube (1, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b = Cube (one, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Back (Counterclockwise)
 b' :: CubeConfiguration
-b' = Cube (1, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b' = Cube (one, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Right (Clockwise)
 r :: CubeConfiguration
-r = Cube (1, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r = Cube (one, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Right (Counterclockwise)
 r' :: CubeConfiguration
-r' = Cube (1, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r' = Cube (one, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Down (Clockwise)
 d :: CubeConfiguration
-d = Cube (1, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
+d = Cube (one, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
 
 -- Down (Counterclockwise)
 d' :: CubeConfiguration
-d' = Cube (1, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
+d' = Cube (one, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
 
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
@@ -493,7 +504,7 @@ getCubieNumber (V n _) = n
 -- For center cubies, m represents the orientation of the sticker.
 -- Orientations are not represented as modular integers here for type reasons.
 toPermutation :: CubeConfiguration -> Permutation Cubie
-toPermutation (Cube (a, b, c, xs, ys, zs)) = a' * b' * c'
+toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
     a' = pp [(C n k, C (a ?. n) (xs *! n + k)) | n <- [1 .. 6], k <- [0,1,2,3]]
     b' = pp [(E n k, E (b ?. n) (ys *! n + k)) | n <- [1 .. 12], k <- [0,1]]
@@ -540,7 +551,7 @@ fromPermutation o = Cube (a,b,c,xs,ys,zs)
 -- >                -----------
 --
 toNumericPermutation :: CubeConfiguration -> Permutation Integer
-toNumericPermutation (Cube (a, b, c, xs, ys, zs)) = a' * b' * c'
+toNumericPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
     a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *! n + k)) | n <- [1 .. 6], k <- [0,1,2,3]]
     b' = pp [(n + 12 * unmod k + 24, (b ?. n) + 12 * unmod (ys *! n + k) + 24) | n <- [1 .. 12], k <- [0, 1]]

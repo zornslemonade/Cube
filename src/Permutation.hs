@@ -21,10 +21,12 @@ module Permutation
     showInline,
     showMultiline,
 
-    -- * Basic operations of permutations
-    (^-),
+    -- * Basic operations and notation for permutations
     (?.),
     (?-),
+    (?),
+    one,
+    (?^),
     (?^?),
     (>?<),
 
@@ -67,45 +69,33 @@ newtype Permutation a = P (M.Map a a) deriving (Eq)
 -- | Construct a permutation from a list of cycles.
 --  On invalid input, returns the identity.
 p :: Ord a => [[a]] -> Permutation a
-p cs = fromMaybe 1 $ fromCycles cs
+p cs = fromMaybe one $ fromCycles cs
 
 -- | Construct a permutation from a list of pairs.
 --  On invalid input, returns the identity.
 pp :: Ord a => [(a, a)] -> Permutation a
-pp zs = fromMaybe 1 $ fromPairs zs
+pp zs = fromMaybe one $ fromPairs zs
 
 ------
 -- Instantiating type classes
 ------
 
 instance Ord a => Semigroup (Permutation a) where
-  o <> q = o * q
+  o <> q = pp [(x, o ?. q ?. x) | x <- support o ++ support q]
 
 -- The identity configuration will be given below
 instance Ord a => Monoid (Permutation a) where
-  mempty = 1
+  mempty = P M.empty
 
 instance Ord a => Group (Permutation a) where
   invert (P g) = P $ M.fromList $ map (\(x, y) -> (y, x)) $ M.toList g
-
--- | Using the Num Class to (ab)use @(*)@ for multiplication.
---  Also allows writing @1@ for the identity permutation.
---  Other operations will give an error.
---  Monoid syntax can be used instead.
-instance Ord a => Num (Permutation a) where
-  o * q = pp [(x, o ?. q ?. x) | x <- support o ++ support q]
-  fromInteger 1 = P M.empty
-  _ + _ = error "(Permutation a).+: not applicable"
-  negate _ = error "(Permutation a).negate: not applicable"
-  abs _ = error "(Permutation a).abs: not applicable"
-  signum _ = error "(Permutation a).signum: not applicable"
 
 -- | Converts the permutation to a string, showing its cycle decomposition on a single line, i.e.,
 --
 --  > (1 2 3)(4 5)
 showInline :: (Ord a, Show a) => Permutation a -> String
 showInline g
-  | g == 1 = "1"
+  | g == one = "1"
   | otherwise = concatMap showCycle $ toCycles g
   where
     showCycle xs = "(" ++ unwords (map show xs) ++ ")"
@@ -113,7 +103,7 @@ showInline g
 -- | Inserts a newline character between each cycle.
 showMultiline :: (Ord a, Show a) => Permutation a -> String
 showMultiline g
-  | g == 1 = "1"
+  | g == one = "1"
   | otherwise = L.intercalate "\n" (map showCycle (toCycles g))
   where
     showCycle xs = "(" ++ unwords (map show xs) ++ ")"
@@ -123,42 +113,68 @@ instance (Ord a, Show a) => Show (Permutation a) where
   show = showMultiline
 
 ------
--- Useful mathematical functions of permutations
+-- Useful mathematical functions and notation for permutations
 ------
 
--- | A notational trick to define @(^)@ for negative exponents
-infixl 8 ^-
-
-(^-) :: (Ord a, Integral b) => Permutation a -> b -> Permutation a
-o ^- n = invert o ^ n
-
--- | Apply the given permutation to the given element
+-- | Action on an element (Apply the permutation)
+--
+-- >>> p [[1,2,3]] ?. 2
+-- 3
 infixr 1 ?.
 
 (?.) :: Ord a => Permutation a -> a -> a
 o ?. x = toFunction o x
 
--- | Apply the given permutation to the given list of elements
+-- | Action on a set
+--
+-- >>> p [[1,2,3]] ?- [2,4]
+-- [3,4]
 infixr 1 ?-
 
 (?-) :: Ord a => Permutation a -> [a] -> [a]
 o ?- xs = [o ?. x | x <- xs]
 
+-- | Multiplication
+--
+-- > (o ? q) ?. x == o ?. (q ?. x)
+infixl 7 ?
+(?) :: (Ord a) => Permutation a -> Permutation a -> Permutation a
+(?) = mappend
+
+-- | The identity (the identity permutation is often written as 1)
+--
+-- > one == p [[]]
+one :: (Ord a) => Permutation a
+one = mempty
+
+-- | Exponentiation (including negative exponents)
+--
+-- >>> p [[1,2,3,4,5]] ?^ 2
+-- (1 3 5 2 4)
+infixl 8 ?^
+
+(?^) :: (Ord a, Integral b) => Permutation a -> b -> Permutation a
+x ?^ 0 = one
+x ?^ (-1) = invert x
+x ?^ n
+  | even n = (x ? x) ?^ div n 2
+  | otherwise = x ? (x ? x) ?^ div n 2
+
 -- | Conjugation of two permutations, i.e.,
 --
---  > o ?^? q == q ^-1 * o * q
+-- > o ?^? q == q ?^ (-1) ? o ? q
 infix 8 ?^?
 
 (?^?) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o ?^? q = q ^- 1 * o * q
+o ?^? q = q ?^ (-1) ? o ? q
 
 -- | Commutator of two perumutations, i.e.,
 --
---  > o >?< q == o ^-1 * q ^-1 * o * q
+-- > o >?< q == o ?^ (-1) ? q ?^ (-1) ? o ? q
 infix 7 >?<
 
 (>?<) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o >?< q = o ^- 1 * q ^- 1 * o * q
+o >?< q = o ?^ (-1) ? q ?^ (-1) ? o ? q
 
 -- | Parity of a permutation
 parity :: Ord a => Permutation a -> Mod2
@@ -252,9 +268,9 @@ toPairs (P g) = M.toList g
 
 -- Assumes that each element defines a cycle
 fromCycles :: Ord a => [[a]] -> Maybe (Permutation a)
-fromCycles = fmap product . mapM fromCycle
+fromCycles = fmap mconcat . mapM fromCycle
   where
-    fromCycle [] = Just 1
+    fromCycle [] = Just one
     fromCycle cs@(x : xs) = fromPairs $ zip cs $ xs ++ [x]
 
 toCycles :: Ord a => Permutation a -> [[a]]

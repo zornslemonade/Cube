@@ -47,7 +47,7 @@ class (Foldable z) => Permutable z where
   -- | Right action by permutations
   infixr 7 *?
   (*?) :: Integral b => z a -> Permutation b -> z a
-  x *? o = (o ^- 1) ?* x
+  x *? o = o ?^ (-1) ?* x
 
   -- | Left action by permutations
   infixl 7 ?*
