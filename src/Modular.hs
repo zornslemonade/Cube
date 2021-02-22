@@ -37,7 +37,7 @@ class Num a => Modular a where
 newtype Mod2 = M2 Integer deriving (Eq, Ord)
 
 m2 :: Integral a => a -> Mod2
-m2 = M2 . mod 2 . toInteger
+m2 = M2 . (`mod` 2) . toInteger
 
 instance Modular Mod2 where
   unmod (M2 x) = fromInteger x
@@ -49,7 +49,7 @@ instance Num Mod2 where
   negate = id
   abs = id
   signum = const (M2 1)
-  fromInteger n = M2 (n `mod` 2)
+  fromInteger = M2 . (`mod` 2)
 
 instance Show Mod2 where
   show (M2 x) = show x
@@ -57,7 +57,7 @@ instance Show Mod2 where
 newtype Mod3 = M3 Integer deriving (Eq, Ord)
 
 m3 :: Integral a => a -> Mod3
-m3 = M3 . mod 3 . toInteger
+m3 = M3 . (`mod` 3) . toInteger
 
 instance Modular Mod3 where
   unmod (M3 x) = fromInteger x
@@ -69,7 +69,7 @@ instance Num Mod3 where
   negate (M3 x) = fromInteger (- x)
   abs = id
   signum = const (M3 1)
-  fromInteger n = M3 (n `mod` 3)
+  fromInteger = M3 . (`mod` 3)
 
 instance Show Mod3 where
   show (M3 x) = show x
@@ -77,7 +77,7 @@ instance Show Mod3 where
 newtype Mod4 = M4 Integer deriving (Eq, Ord)
 
 m4 :: Integral a => a -> Mod4
-m4 = M4 . mod 4 . toInteger
+m4 = M4 . (`mod` 4) . toInteger
 
 instance Modular Mod4 where
   unmod (M4 x) = fromInteger x
@@ -89,7 +89,7 @@ instance Num Mod4 where
   negate (M4 x) = fromInteger (- x)
   abs = id
   signum = const (M4 1)
-  fromInteger n = M4 (n `mod` 4)
+  fromInteger = M4 . (`mod` 4)
 
 instance Show Mod4 where
   show (M4 x) = show x

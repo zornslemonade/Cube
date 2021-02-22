@@ -2,9 +2,12 @@ module CubeTest (cubeTests) where
 
 import Cube
 import Permutable
-import Permutation
+import Permutation (p)
+import Data.Group
 import Test.Tasty
 import Test.Tasty.QuickCheck
+
+i = turnToConfig I
 
 -- Example configurations for testing
 flippedEdges :: CubeConfiguration
@@ -49,7 +52,7 @@ basicOperationTests =
   testGroup
     "Tests of the basic operations"
     [ testProperty "Associativity of #" prop_associative,
-      testProperty "The identity of # is i" prop_identity,
+      testProperty "The identity of # is I" prop_identity,
       testProperty "Inverses are given by invert" prop_inverse,
       testProperty "Exponentiation is given by #^" prop_exponent,
       testProperty "Exponentiation order cancellation" prop_order
