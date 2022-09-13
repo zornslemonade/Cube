@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b8f766b7e99cb80f4ef4950c6a66233eecfe1f3fa41785b6d48fb41a41c8ca58
+-- hash: 67a1e5366da3af3cc1d8cbe0807aa0b01ca973574add34e4dbc153fd52c1526b
 
 name:           Cube
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       Cube
+      Cube.ClassicCube
       Cube.SudokuCube
       Modular
       Permutable
