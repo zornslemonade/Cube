@@ -489,7 +489,7 @@ getCubieNumber (C n _) = n
 getCubieNumber (E n _) = n
 getCubieNumber (V n _) = n
 
-
+  
 
 -- |
 -- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
@@ -517,9 +517,9 @@ fromPermutation o = Cube (a,b,c,xs,ys,zs)
     a = pp $ map getCubieNumbers $ filter (isCenterCubie . fst) $ toPairs o
     b = pp $ map getCubieNumbers $ filter (isEdgeCubie . fst) $ toPairs o
     c = pp $ map getCubieNumbers $ filter (isVertexCubie . fst) $ toPairs o
-    xs = fromList [case o ?. C n 0  of C _ m -> m | n <- [1 .. 6]]
-    ys = fromList [case o ?. E n 0  of E _ m -> m | n <- [1 .. 12]]
-    zs = fromList [case o ?. V n 0  of V _ m -> m | n <- [1 .. 8]]
+    xs = fromList [case o ?. C n 0  of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
+    ys = fromList [case o ?. E n 0  of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
+    zs = fromList [case o ?. V n 0  of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 -- |
 -- This sends a configuration to the same permutation of stickers, but with each sticker represented as a number between 1 and 72

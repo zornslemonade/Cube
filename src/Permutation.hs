@@ -213,6 +213,7 @@ support (P g) = M.keys g
 transpositionDecomposition :: Ord a => a -> Permutation a -> [[a]]
 transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
   where
+    cycleToTranspositions [] = []
     cycleToTranspositions (x : xs)
       | x == z = process xs
       | otherwise = [z, x] : process (x : xs)
