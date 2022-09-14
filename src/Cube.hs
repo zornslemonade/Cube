@@ -350,7 +350,7 @@ data Turn =
   I |
   -- | A single turn of the __U__p (top) face clockwise
   U |
-  -- | A single turn of the __U__p face counter-clockwise
+  -- | A single turn of the __U__p (top) face counter-clockwise
   U' |
   -- | A single turn of the __F__ront face clockwise
   F |
@@ -370,7 +370,7 @@ data Turn =
    R' |
   -- | A single turn of the __D__own (bottom) face clockwise
    D |
-  -- | A single turn of the __D__own  face counter-clockwise
+  -- | A single turn of the __D__own (bottom) face counter-clockwise
    D'
 
 -- | Counter-clockwise turns are represented as strings with lowercase letters, instead of with apostrophes.
@@ -926,27 +926,27 @@ arbVertexO = Q.arbitrary
 
 {-
 >>> Q.generate $ ShowCube <$> (Q.arbitrary :: Q.Gen CubeConfiguration)
-                 -----------
-                |   | o |:::|
-                |---+---+---|
-                | X | X |   |
-                |---+---+---|
-                | o | ~ |   |
-                 -----------
-   -----------   -----------   -----------   -----------
-  |###| ~ |   | |###| o | X | |:::| o | ~ | |###| X |:::|
+                 -----------                             
+                | X |:::| X |                            
+                |---+---+---|                            
+                | X |>X>| ~ |                            
+                |---+---+---|                            
+                | o | o |   |                            
+                 -----------                             
+   -----------   -----------   -----------   ----------- 
+  |:::| ~ |   | |###|###| o | | X |###| o | | ~ |###| ~ |
   |---+---+---| |---+---+---| |---+---+---| |---+---+---|
-  |   |   |   | |###| o |   | | X |:::|###| |:::| ~ |:::|
+  |   |^#^|:::| |   |^:^| ~ | | o |vov| o | | X |> >|###|
   |---+---+---| |---+---+---| |---+---+---| |---+---+---|
-  | ~ |:::| ~ | | o | ~ |:::| | ~ | ~ | o | |   | o | o |
-   -----------   -----------   -----------   -----------
-                 -----------
-                | X |:::| X |
-                |---+---+---|
-                | X |###|###|
-                |---+---+---|
-                |###|###| X |
-                 -----------
+  |###| o |###| | o |:::|:::| |   | X |   | |:::| ~ |:::|
+   -----------   -----------   -----------   ----------- 
+                 -----------                             
+                | ~ | X |###|                            
+                |---+---+---|                            
+                |   |<~<|   |                            
+                |---+---+---|                            
+                | ~ |:::| X |                            
+                 -----------                             
 -}
 instance Q.Arbitrary CubeConfiguration where
   arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
