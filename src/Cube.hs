@@ -255,36 +255,39 @@ instance Group CubeConfiguration where
 -- Shorthand for the group operations
 ------
 
--- | Composition of cube configurations
-infixl 7 #
-(#) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-x # y = x <> y
+class TwistyPuzzle  a where
+  -- | Composition of cube configurations
+  infixl 7 #
+  (#) :: a -> a -> a
 
--- | Exponentiation (including negative exponents)
-infixl 8 #^
+  -- | Exponentiation (including negative exponents)
+  infixl 8 #^
+  (#^) :: Integral b => a -> b -> a
 
-(#^) :: Integral b => CubeConfiguration -> b -> CubeConfiguration
-x #^ 0 = i
-x #^ (-1) = invert x
-x #^ n
-  | even n = (x # x) #^ div n 2
-  | otherwise = x # (x # x) #^ div n 2
+  -- | Conjugation of cube configurations, i.e.,
+  --
+  -- > g #^# h == h #^ (-1) # g # h
+  infix 8 #^#
+  (#^#) :: a -> a -> a
 
--- | Conjugation of cube configurations, i.e.,
---
--- > g #^# h == h #^ (-1) # g # h
-infix 8 #^#
+  -- | Commutator of cube configurations, i.e.,
+  --
+  -- > g >#< h == g #^ (-1) # h #^ (-1) # g # h
+  infix 7 >#<
+  (>#<) :: a -> a -> a
 
-(#^#) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-x #^# y = invert y # x # y
+instance TwistyPuzzle CubeConfiguration where
+  x # y = x <> y
 
--- | Commutator of cube configurations, i.e.,
---
--- > g >#< h == g #^ (-1) # h #^ (-1) # g # h
-infix 7 >#<
+  x #^ 0 = i
+  x #^ (-1) = invert x
+  x #^ n
+    | even n = (x # x) #^ div n 2
+    | otherwise = x # (x # x) #^ div n 2
 
-(>#<) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-x >#< y = invert x # invert y # x # y
+  x #^# y = invert y # x # y
+  
+  x >#< y = invert x # invert y # x # y
 
 ------
 -- Explicitly writing out the cube configurations corresponding to the identity plus the single Turn of each face
@@ -738,6 +741,13 @@ newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq)
 
 instance Show ASCIICube where
   show (ShowCube g) = showCube g
+
+instance TwistyPuzzle ASCIICube where
+  (ShowCube x) # (ShowCube y) = ShowCube (x # y)
+  (ShowCube x) #^ n = ShowCube (x #^ n)
+  (ShowCube x) #^# (ShowCube y) = ShowCube (x #^# y)
+  (ShowCube x) >#< (ShowCube y) = ShowCube (x >#< y)
+
 
 -- Lookup table that assigns to each sticker color a string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
