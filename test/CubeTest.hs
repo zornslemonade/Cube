@@ -2,7 +2,7 @@ module CubeTest (cubeTests) where
 
 import Cube
 import Permutable
-import Permutation (p)
+import Permutation (p, one)
 import Data.Group
 import Test.Tasty
 import Test.Tasty.QuickCheck
@@ -11,16 +11,16 @@ i = turnToConfig I
 
 -- Example configurations for testing
 flippedEdges :: CubeConfiguration
-flippedEdges = Cube (1, 1, 1, 0, T12 (1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdges = Cube (one, one, one, 0, T12 (1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
 
 flippedEdgesIllegal :: CubeConfiguration
-flippedEdgesIllegal = Cube (1, 1, 1, 0, T12 (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdgesIllegal = Cube (one, one, one, 0, T12 (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
 
 swappedVertices :: CubeConfiguration
-swappedVertices = Cube (1, 1, p [[1, 2, 3]], 0, 0, 0)
+swappedVertices = Cube (one, one, p [[1, 2, 3]], 0, 0, 0)
 
 swappedVerticesIllegal :: CubeConfiguration
-swappedVerticesIllegal = Cube (1, 1, p [[1, 2]], 0, 0, 0)
+swappedVerticesIllegal = Cube (one, one, p [[1, 2]], 0, 0, 0)
 
 similarityExample1 :: CubeConfiguration
 similarityExample1 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 9, 7, 5, 2, 8, 10, 12, 3, 4, 11, 6]], p [[1, 5, 3], [4, 6, 8, 7]], T6 (2, 0, 1, 1, 0, 0), T12 (0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0), T8 (1, 1, 0, 0, 1, 1, 1, 2))

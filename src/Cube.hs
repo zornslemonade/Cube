@@ -40,7 +40,7 @@ module Cube
     -- * Displaying configurations
     showCubeConfig,
     showCube,
-    ASCIICube,
+    ASCIICube (..),
 
     -- * Basic operations
     (#),
