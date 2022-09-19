@@ -210,6 +210,7 @@ support (P g) = M.keys g
 --
 --  >>> transpositionDecomposition 1 (p [[1,2,3],[4,5]])
 -- [[1,3],[1,2],[1,4],[1,5],[1,4]]
+-- CURRENTLY BROKEN
 transpositionDecomposition :: Ord a => a -> Permutation a -> [[a]]
 transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
   where
@@ -229,9 +230,7 @@ transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
 -- >>> threeCycleDecomposition 5 6 (p [[1,2],[3,4]])
 -- [[6,5,2],[6,5,1],[5,6,2],[6,5,3],[6,5,1],[6,5,4],[5,6,3]]
 threeCycleDecomposition :: Ord a => a -> a -> Permutation a -> [[a]]
-threeCycleDecomposition z1 z2 o
-  | parity o == 0 = shrink $ pairOff $ transpositionDecomposition z1 o
-  | otherwise = shrink $ pairOff $ transpositionDecomposition z1 o
+threeCycleDecomposition z1 z2 o = shrink $ pairOff $ transpositionDecomposition z1 o
   where
     pairOff ([_, a] : [_, b] : xs)
       | a == b = pairOff xs
