@@ -138,6 +138,7 @@ o ?- xs = [o ?. x | x <- xs]
 --
 -- > (o ? q) ?. x == o ?. (q ?. x)
 infixl 7 ?
+
 (?) :: (Ord a) => Permutation a -> Permutation a -> Permutation a
 (?) = mappend
 
@@ -210,16 +211,20 @@ support (P g) = M.keys g
 --
 --  >>> transpositionDecomposition 1 (p [[1,2,3],[4,5]])
 -- [[1,3],[1,2],[1,4],[1,5],[1,4]]
--- CURRENTLY BROKEN
 transpositionDecomposition :: Ord a => a -> Permutation a -> [[a]]
 transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
   where
-    cycleToTranspositions [] = []
-    cycleToTranspositions (x : xs)
-      | x == z = process xs
-      | otherwise = [z, x] : process (x : xs)
-    process [] = []
-    process (x : xs) = process xs ++ [[z, x]]
+    cycleToTranspositions s =
+      case splitAt z s of
+        ([], []) -> []
+        (x : as, []) -> [z, x] : createTranspositions (x : as)
+        (a, _ : bs) -> createTranspositions a ++ createTranspositions bs
+    splitAt x [] = ([], [])
+    splitAt x (y : ys)
+      | x == y = ([], y : ys)
+      | otherwise = let (a, b) = splitAt x ys in (y : a, b)
+    createTranspositions [] = []
+    createTranspositions (x : xs) = createTranspositions xs ++ [[z, x]]
 
 -- | Given z1, z2, decompose the permutation into an equivalent product of 3-cycles of the form (z1 z2 x) and (z2 z1 x).
 -- This can be done for any even permutation and any z1 and z2 but is not unique.

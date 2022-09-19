@@ -69,15 +69,15 @@ module Cube
   )
 where
 
+import qualified Data.Function as F
 import Data.Group
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Test.Tasty.QuickCheck as Q
-import qualified Data.Function as F
 import Data.Maybe (fromMaybe)
 import Modular
 import Permutable
 import Permutation
+import qualified Test.Tasty.QuickCheck as Q
 
 ------
 -- Defining the CubeConfiguration type
@@ -158,7 +158,6 @@ type VertexO = Tuple8 Mod3
 -- >               |---+---+---|
 -- >               | 0 | 0 | 0 |
 -- >                -----------
---
 
 -- So if the third corner cubie is moved the the fith position and its new orientati
 -- So if for a given configuration, c(3) = 5 and the 3rd value of zs is 2, then in this configuration, the 0 face of the 3rd vertex
@@ -210,8 +209,8 @@ showCubeConfig :: CubeConfiguration -> String
 showCubeConfig (Cube (a, b, c, xs, ys, zs)) = L.intercalate "\n" [showInline a, showInline b, showInline c, show xs, show ys, show zs]
 
 instance Show CubeConfiguration where
-  show = showCubeConfig 
-  
+  show = showCubeConfig
+
 ------
 -- Instantiating typeclasses
 ------
@@ -255,7 +254,7 @@ instance Group CubeConfiguration where
 -- Shorthand for the group operations
 ------
 
-class TwistyPuzzle  a where
+class TwistyPuzzle a where
   -- | Composition of cube configurations
   infixl 7 #
   (#) :: a -> a -> a
@@ -286,7 +285,7 @@ instance TwistyPuzzle CubeConfiguration where
     | otherwise = x # (x # x) #^ div n 2
 
   x #^# y = invert y # x # y
-  
+
   x >#< y = invert x # invert y # x # y
 
 ------
@@ -348,33 +347,33 @@ d' = Cube (one, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0,
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
 -- Applying each basic turn to the cube in its default state results in a unique cube configuration.
-data Turn =
-  -- | The __I__dentity (no turn)
-  I |
-  -- | A single turn of the __U__p (top) face clockwise
-  U |
-  -- | A single turn of the __U__p (top) face counter-clockwise
-  U' |
-  -- | A single turn of the __F__ront face clockwise
-  F |
-  -- | A single turn of the __F__ront face counter-clockwise
-   F' |
-  -- | A single turn of the __L__eft face clockwise
-   L |
-  -- | A single turn of the __L__eft face counter-clockwise
-   L' |
-  -- | A single turn of the __B__ack face clockwise
-   B |
-  -- | A single turn of the __B__ack face counter-clockwise
-   B' |
-  -- | A single turn of the __R__ight face clockwise
-   R |
-  -- | A single turn of the __R__ight face counter-clockwise
-   R' |
-  -- | A single turn of the __D__own (bottom) face clockwise
-   D |
-  -- | A single turn of the __D__own (bottom) face counter-clockwise
-   D'
+data Turn
+  = -- | The __I__dentity (no turn)
+    I
+  | -- | A single turn of the __U__p (top) face clockwise
+    U
+  | -- | A single turn of the __U__p (top) face counter-clockwise
+    U'
+  | -- | A single turn of the __F__ront face clockwise
+    F
+  | -- | A single turn of the __F__ront face counter-clockwise
+    F'
+  | -- | A single turn of the __L__eft face clockwise
+    L
+  | -- | A single turn of the __L__eft face counter-clockwise
+    L'
+  | -- | A single turn of the __B__ack face clockwise
+    B
+  | -- | A single turn of the __B__ack face counter-clockwise
+    B'
+  | -- | A single turn of the __R__ight face clockwise
+    R
+  | -- | A single turn of the __R__ight face counter-clockwise
+    R'
+  | -- | A single turn of the __D__own (bottom) face clockwise
+    D
+  | -- | A single turn of the __D__own (bottom) face counter-clockwise
+    D'
 
 -- | Counter-clockwise turns are represented as strings with lowercase letters, instead of with apostrophes.
 instance Show Turn where
@@ -461,15 +460,13 @@ getCubieNumber (C n _) = n
 getCubieNumber (E n _) = n
 getCubieNumber (V n _) = n
 
-  
-
 -- |
 -- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
 -- cubie sticker are considered distinct).
 -- This manifests as a monomorphism from the group of cube configurations into the permutation group of stickers.
 -- Conversely, not every permutation of stickers gives a valid configuration of the cube, for example a vertex sticker can never
 -- end up in the place of an edge sticker.
--- 
+--
 -- This sends a configuration to a permutation of the stickers, where each sticker is represented as a tuple (X, n, m), where
 -- X encodes whether it is a center, edge, or vertex cubie (taking the values 'C', 'E', or 'V', respectively), n represents the cubie
 -- the sticker is attached to, and m represents the face of that cubie that the sticker is attached to.
@@ -478,20 +475,20 @@ getCubieNumber (V n _) = n
 toPermutation :: CubeConfiguration -> Permutation Cubie
 toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
-    a' = pp [(C n k, C (a ?. n) (xs *! n + k)) | n <- [1 .. 6], k <- [0,1,2,3]]
-    b' = pp [(E n k, E (b ?. n) (ys *! n + k)) | n <- [1 .. 12], k <- [0,1]]
-    c' = pp [(V n k, V (c ?. n) (zs *! n + k)) | n <- [1 .. 8], k <- [0,1,2]]
+    a' = pp [(C n k, C (a ?. n) (xs *! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+    b' = pp [(E n k, E (b ?. n) (ys *! n + k)) | n <- [1 .. 12], k <- [0, 1]]
+    c' = pp [(V n k, V (c ?. n) (zs *! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
 
 fromPermutation :: Permutation Cubie -> CubeConfiguration
-fromPermutation o = Cube (a,b,c,xs,ys,zs)
+fromPermutation o = Cube (a, b, c, xs, ys, zs)
   where
     getCubieNumbers = uncurry ((,) `F.on` getCubieNumber)
     a = pp $ map getCubieNumbers $ filter (isCenterCubie . fst) $ toPairs o
     b = pp $ map getCubieNumbers $ filter (isEdgeCubie . fst) $ toPairs o
     c = pp $ map getCubieNumbers $ filter (isVertexCubie . fst) $ toPairs o
-    xs = fromList [case o ?. C n 0  of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
-    ys = fromList [case o ?. E n 0  of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
-    zs = fromList [case o ?. V n 0  of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
+    xs = fromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
+    ys = fromList [case o ?. E n 0 of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
+    zs = fromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 -- |
 -- This sends a configuration to the same permutation of stickers, but with each sticker represented as a number between 1 and 72
@@ -521,13 +518,12 @@ fromPermutation o = Cube (a,b,c,xs,ys,zs)
 -- >               |---+---+---|
 -- >               |56 |35 |55 |
 -- >                -----------
---
 toNumericPermutation :: CubeConfiguration -> Permutation Integer
 toNumericPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
-    a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *! n + k)) | n <- [1 .. 6], k <- [0,1,2,3]]
+    a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
     b' = pp [(n + 12 * unmod k + 24, (b ?. n) + 12 * unmod (ys *! n + k) + 24) | n <- [1 .. 12], k <- [0, 1]]
-    c' = pp [(n + 8 * unmod k + 48, (c ?. n) + 8 * unmod (zs *! n + k) + 48) | n <- [1 .. 8], k <- [0,1,2]]
+    c' = pp [(n + 8 * unmod k + 48, (c ?. n) + 8 * unmod (zs *! n + k) + 48) | n <- [1 .. 8], k <- [0, 1, 2]]
 
 fromNumericPermutation :: Permutation Integer -> CubeConfiguration
 fromNumericPermutation o = Cube (a, b, c, xs, ys, zs)
@@ -712,7 +708,7 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 ------
 
 -- | Extra newtype that allows for an alternate, more visual Show instance for cube configurations
--- 
+--
 -- E.g. the identity configuration is displayed as
 --
 -- >                -----------
@@ -736,7 +732,6 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 -- >               |---+---+---|
 -- >               | ~ | ~ | ~ |
 -- >                -----------
---
 newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq)
 
 instance Show ASCIICube where
@@ -747,7 +742,6 @@ instance TwistyPuzzle ASCIICube where
   (ShowCube x) #^ n = ShowCube (x #^ n)
   (ShowCube x) #^# (ShowCube y) = ShowCube (x #^# y)
   (ShowCube x) >#< (ShowCube y) = ShowCube (x >#< y)
-
 
 -- Lookup table that assigns to each sticker color a string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
@@ -893,7 +887,6 @@ drawCube xs = case xs of
     ]
   _ -> ["Attempted to draw a cube without the correct number of stickers :("]
 
-
 -- | Creates the list of string representing the cube configuration as ASCII art
 -- Takes as input a Map which sends the numbers 1 - 72 to strings. Each string should be three characteres long.
 -- These serve as the stickers for the ASCII art. The stickers are enumerated just as in the definition of 'toNumericPermutation'.
@@ -905,7 +898,7 @@ showCubeCustom lookupMap g =
 
 -- | Uses the default assignment of strings to colors
 showCube :: CubeConfiguration -> String
-showCube = showCubeCustom $ M.fromAscList [(x,colorLookup M.! (stickerLookup M.! x))  | x <- [1..72]]
+showCube = showCubeCustom $ M.fromAscList [(x, colorLookup M.! (stickerLookup M.! x)) | x <- [1 .. 72]]
 
 ------
 -- Testing Instances
@@ -936,27 +929,27 @@ arbVertexO = Q.arbitrary
 
 {-
 >>> Q.generate $ ShowCube <$> (Q.arbitrary :: Q.Gen CubeConfiguration)
-                 -----------                             
-                | X |:::| X |                            
-                |---+---+---|                            
-                | X |>X>| ~ |                            
-                |---+---+---|                            
-                | o | o |   |                            
-                 -----------                             
-   -----------   -----------   -----------   ----------- 
+                 -----------
+                | X |:::| X |
+                |---+---+---|
+                | X |>X>| ~ |
+                |---+---+---|
+                | o | o |   |
+                 -----------
+   -----------   -----------   -----------   -----------
   |:::| ~ |   | |###|###| o | | X |###| o | | ~ |###| ~ |
   |---+---+---| |---+---+---| |---+---+---| |---+---+---|
   |   |^#^|:::| |   |^:^| ~ | | o |vov| o | | X |> >|###|
   |---+---+---| |---+---+---| |---+---+---| |---+---+---|
   |###| o |###| | o |:::|:::| |   | X |   | |:::| ~ |:::|
-   -----------   -----------   -----------   ----------- 
-                 -----------                             
-                | ~ | X |###|                            
-                |---+---+---|                            
-                |   |<~<|   |                            
-                |---+---+---|                            
-                | ~ |:::| X |                            
-                 -----------                             
+   -----------   -----------   -----------   -----------
+                 -----------
+                | ~ | X |###|
+                |---+---+---|
+                |   |<~<|   |
+                |---+---+---|
+                | ~ |:::| X |
+                 -----------
 -}
 instance Q.Arbitrary CubeConfiguration where
   arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
