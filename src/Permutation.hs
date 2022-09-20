@@ -121,7 +121,6 @@ instance (Ord a, Show a) => Show (Permutation a) where
 -- >>> p [[1,2,3]] ?. 2
 -- 3
 infixr 1 ?.
-
 (?.) :: Ord a => Permutation a -> a -> a
 o ?. x = toFunction o x
 
@@ -130,7 +129,6 @@ o ?. x = toFunction o x
 -- >>> p [[1,2,3]] ?- [2,4]
 -- [3,4]
 infixr 1 ?-
-
 (?-) :: Ord a => Permutation a -> [a] -> [a]
 o ?- xs = [o ?. x | x <- xs]
 
@@ -152,7 +150,6 @@ one = mempty
 -- >>> p [[1,2,3,4,5]] ?^ 2
 -- (1 3 5 2 4)
 infixl 8 ?^
-
 (?^) :: (Ord a, Integral b) => Permutation a -> b -> Permutation a
 x ?^ 0 = one
 x ?^ (-1) = invert x
@@ -164,7 +161,6 @@ x ?^ n
 --
 -- > o ?^? q == q ?^ (-1) ? o ? q
 infix 8 ?^?
-
 (?^?) :: Ord a => Permutation a -> Permutation a -> Permutation a
 o ?^? q = q ?^ (-1) ? o ? q
 
@@ -172,7 +168,6 @@ o ?^? q = q ?^ (-1) ? o ? q
 --
 -- > o >?< q == o ?^ (-1) ? q ?^ (-1) ? o ? q
 infix 7 >?<
-
 (>?<) :: Ord a => Permutation a -> Permutation a -> Permutation a
 o >?< q = o ?^ (-1) ? q ?^ (-1) ? o ? q
 
