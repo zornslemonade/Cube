@@ -136,7 +136,6 @@ o ?- xs = [o ?. x | x <- xs]
 --
 -- > (o ? q) ?. x == o ?. (q ?. x)
 infixl 7 ?
-
 (?) :: (Ord a) => Permutation a -> Permutation a -> Permutation a
 (?) = mappend
 
