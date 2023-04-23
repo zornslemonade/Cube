@@ -43,10 +43,10 @@ module Cube
     ASCIICube (..),
 
     -- * Basic operations
-    (#),
-    (#^),
-    (#^#),
-    (>#<),
+    (|#|),
+    (|#|^),
+    (|#|^|#|),
+    (>|#|<),
 
     -- * Permutation representations
     Cubie (..),
@@ -256,37 +256,37 @@ instance Group CubeConfiguration where
 
 class TwistyPuzzle a where
   -- | Composition of cube configurations
-  infixl 7 #
-  (#) :: a -> a -> a
+  infixl 7 |#|
+  (|#|) :: a -> a -> a
 
   -- | Exponentiation (including negative exponents)
-  infixl 8 #^
-  (#^) :: Integral b => a -> b -> a
+  infixl 8 |#|^
+  (|#|^) :: Integral b => a -> b -> a
 
   -- | Conjugation of cube configurations, i.e.,
   --
-  -- > g #^# h == h #^ (-1) # g # h
-  infix 8 #^#
-  (#^#) :: a -> a -> a
+  -- > g |#|^|#| h == h |#|^ (-1) |#| g |#| h
+  infix 8 |#|^|#|
+  (|#|^|#|) :: a -> a -> a
 
   -- | Commutator of cube configurations, i.e.,
   --
-  -- > g >#< h == g #^ (-1) # h #^ (-1) # g # h
-  infix 7 >#<
-  (>#<) :: a -> a -> a
+  -- > g >|#|< h == g |#|^ (-1) |#| h |#|^ (-1) |#| g |#| h
+  infix 7 >|#|<
+  (>|#|<) :: a -> a -> a
 
 instance TwistyPuzzle CubeConfiguration where
-  x # y = x <> y
+  x |#| y = x <> y
 
-  x #^ 0 = i
-  x #^ (-1) = invert x
-  x #^ n
-    | even n = (x # x) #^ div n 2
-    | otherwise = x # (x # x) #^ div n 2
+  x |#|^ 0 = i
+  x |#|^ (-1) = invert x
+  x |#|^ n
+    | even n = (x |#| x) |#|^ div n 2
+    | otherwise = x |#| (x |#| x) |#|^ div n 2
 
-  x #^# y = invert y # x # y
+  x |#|^|#| y = invert y |#| x |#| y
 
-  x >#< y = invert x # invert y # x # y
+  x >|#|< y = invert x |#| invert y |#| x |#| y
 
 ------
 -- Explicitly writing out the cube configurations corresponding to the identity plus the single Turn of each face
@@ -412,7 +412,7 @@ turnToConfig m =
 
 -- | Composes a sequence of turns
 turnsToConfig :: [Turn] -> CubeConfiguration
-turnsToConfig = L.foldl' (\x y -> x # turnToConfig y) i
+turnsToConfig = L.foldl' (\x y -> x |#| turnToConfig y) i
 
 -- This function inverts a basic turn
 invertTurn :: Turn -> Turn
@@ -591,15 +591,15 @@ generate g
     -- positioning the edges
     generate' g0 =
       let ms1 = orientCenters g0
-          g1 = g0 # invert (turnsToConfig ms1)
+          g1 = g0 |#| invert (turnsToConfig ms1)
           ms2 = positionEdges g1
-          g2 = g1 # invert (turnsToConfig ms2)
+          g2 = g1 |#| invert (turnsToConfig ms2)
           ms3 = orientEdges g2
-          g3 = g2 # invert (turnsToConfig ms3)
+          g3 = g2 |#| invert (turnsToConfig ms3)
           ms4 = positionVertices g3
-          g4 = g3 # invert (turnsToConfig ms4)
+          g4 = g3 |#| invert (turnsToConfig ms4)
           ms5 = orientVertices g4
-          g5 = g4 # invert (turnsToConfig ms4)
+          g5 = g4 |#| invert (turnsToConfig ms4)
           ms6 = orientLastCenter g5
        in ms6 ++ ms5 ++ ms4 ++ ms3 ++ ms2 ++ ms1
 
@@ -738,10 +738,10 @@ instance Show ASCIICube where
   show (ShowCube g) = showCube g
 
 instance TwistyPuzzle ASCIICube where
-  (ShowCube x) # (ShowCube y) = ShowCube (x # y)
-  (ShowCube x) #^ n = ShowCube (x #^ n)
-  (ShowCube x) #^# (ShowCube y) = ShowCube (x #^# y)
-  (ShowCube x) >#< (ShowCube y) = ShowCube (x >#< y)
+  (ShowCube x) |#| (ShowCube y) = ShowCube (x |#| y)
+  (ShowCube x) |#|^ n = ShowCube (x |#|^ n)
+  (ShowCube x) |#|^|#| (ShowCube y) = ShowCube (x |#|^|#| y)
+  (ShowCube x) >|#|< (ShowCube y) = ShowCube (x >|#|< y)
 
 -- Lookup table that assigns to each sticker color a string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
