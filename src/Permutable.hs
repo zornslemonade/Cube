@@ -1,4 +1,8 @@
--- |
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE InstanceSigs #-}
+  
+  -- |
 -- Module      :  Permutable
 -- Copyright   :  (c) Grant Goodman 2021
 -- Description :  Implementation of the Generalized Symmetric Group
@@ -25,6 +29,14 @@ import qualified Data.Map as M
 import Permutation
 import Test.Tasty.QuickCheck
 
+import NumericPrelude
+import Algebra.Ring as Ring
+import Algebra.Additive as Additive
+import Algebra.ToInteger as ToInteger
+import Data.Semigroup
+import Data.Monoid
+import Data.Group
+
 ------
 -- Defining an Permutable type class
 ------
@@ -35,23 +47,23 @@ import Test.Tasty.QuickCheck
 class (Foldable z) => Permutable z where
   -- 1-based indexing
   infixl 9 *!
-  (*!) :: Integral b => z a -> b -> a
+  (*!) :: (Ring.C b, Eq b) => z a -> b -> a
 
   -- Inverse of toList
   fromList :: [a] -> z a
 
   -- Utility function
-  toPairList :: Integral b => z a -> [(b, a)]
+  toPairList :: (Ring.C b, Ord b, Enum b) => z a -> [(b, a)]
   toPairList = zip [1 ..] . toList
 
   -- | Right action by permutations
   infixr 7 *?
-  (*?) :: Integral b => z a -> Permutation b -> z a
-  x *? o = o ?^ (-1) ?* x
+  (*?) :: (Ring.C b, Ord b, Enum b) => z a -> Permutation b -> z a
+  x *? o = invert o ?* x
 
   -- | Left action by permutations
   infixl 7 ?*
-  (?*) :: Integral b => Permutation b -> z a -> z a
+  (?*) :: (Ring.C b, Ord b, Enum b) => Permutation b -> z a -> z a
   o ?* x = fromList $ M.elems $ M.fromList [(o ?. n, y) | (n, y) <- toPairList x]
 
 ------
@@ -80,13 +92,15 @@ instance Permutable Tuple6 where
       6 -> f
       _ -> error "Tuple6: Tuple index out of bounds"
 
-instance Num a => Num (Tuple6 a) where
+instance Additive.C a => Additive.C (Tuple6 a) where
+  zero = T6 (zero, zero, zero, zero, zero, zero)
+  negate (T6 (a, b, c, d, e, f)) = T6 (negate a, negate b, negate c, negate d, negate e, negate f)
   (T6 (a, b, c, d, e, f)) + (T6 (a', b', c', d', e', f')) = T6 (a + a', b + b', c + c', d + d', e + e', f + f')
+
+instance Ring.C a => Ring.C (Tuple6 a) where
+  one = T6 (one, one, one, one, one, one)
+  (*) :: Ring.C a => Tuple6 a -> Tuple6 a -> Tuple6 a
   (T6 (a, b, c, d, e, f)) * (T6 (a', b', c', d', e', f')) = T6 (a * a', b * b', c * c', d * d', e * e', f * f')
-  negate (T6 (a, b, c, d, e, f)) = T6 (- a, - b, - c, - d, - e, - f)
-  abs (T6 (a, b, c, d, e, f)) = T6 (abs a, abs b, abs c, abs d, abs e, abs f)
-  signum = error "(Tuple6).signum: not applicable"
-  fromInteger n = T6 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
 
 instance Foldable Tuple6 where
   foldMap mf (T6 (a, b, c, d, e, f)) = mf a `mappend` mf b `mappend` mf c `mappend` mf d `mappend` mf e `mappend` mf f
@@ -116,13 +130,14 @@ instance Permutable Tuple8 where
       8 -> h
       _ -> error "Tuple8: Tuple index out of bounds"
 
-instance Num a => Num (Tuple8 a) where
+instance Additive.C a => Additive.C (Tuple8 a) where
+  zero = T8 (zero, zero, zero, zero, zero, zero, zero, zero)
+  negate (T8 (a, b, c, d, e, f, g, h)) = T8 (negate a, negate b, negate c, negate d, negate e, negate f, negate g, negate h)
   (T8 (a, b, c, d, e, f, g, h)) + (T8 (a', b', c', d', e', f', g', h')) = T8 (a + a', b + b', c + c', d + d', e + e', f + f', g + g', h + h')
+
+instance Ring.C a => Ring.C (Tuple8 a) where
+  one = T8 (one, one, one, one, one, one, one, one)
   (T8 (a, b, c, d, e, f, g, h)) * (T8 (a', b', c', d', e', f', g', h')) = T8 (a * a', b * b', c * c', d * d', e * e', f * f', g * g', h * h')
-  negate (T8 (a, b, c, d, e, f, g, h)) = T8 (- a, - b, - c, - d, - e, - f, - g, - h)
-  abs (T8 (a, b, c, d, e, f, g, h)) = T8 (abs a, abs b, abs c, abs d, abs e, abs f, abs g, abs h)
-  signum = error "(Tuple8).signum: not applicable"
-  fromInteger n = T8 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
 
 instance Foldable Tuple8 where
   foldMap mf (T8 (a, b, c, d, e, f, g, h)) = mf a `mappend` mf b `mappend` mf c `mappend` mf d `mappend` mf e `mappend` mf f `mappend` mf g `mappend` mf h
@@ -157,13 +172,14 @@ instance Permutable Tuple12 where
       12 -> l
       _ -> error "Tuple12: Tuple index out of bounds"
 
-instance Num a => Num (Tuple12 a) where
+instance Additive.C a => Additive.C (Tuple12 a) where
+  zero = T12 (zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero, zero)
+  negate (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (negate a, negate b, negate c, negate d, negate e, negate f, negate g, negate h, negate i, negate j, negate k, negate l)
   (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) + (T12 (a', b', c', d', e', f', g', h', i', j', k', l')) = T12 (a + a', b + b', c + c', d + d', e + e', f + f', g + g', h + h', i + i', j + j', k + k', l + l')
+
+instance Ring.C a => Ring.C (Tuple12 a) where
+  one = T12 (one, one, one, one, one, one, one, one, one, one, one, one)
   (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) * (T12 (a', b', c', d', e', f', g', h', i', j', k', l')) = T12 (a * a', b * b', c * c', d * d', e * e', f * f', g * g', h * h', i * i', j * j', k * k', l * l')
-  negate (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (- a, - b, - c, - d, - e, - f, - g, - h, - i, - j, - k, - l)
-  abs (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (abs a, abs b, abs c, abs d, abs e, abs f, abs g, abs h, abs i, abs j, abs k, abs l)
-  signum = error "(Tuple12).signum: not applicable"
-  fromInteger n = T12 (fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n, fromInteger n)
 
 instance Foldable Tuple12 where
   foldMap mf (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = mf a `mappend` mf b `mappend` mf c `mappend` mf d `mappend` mf e `mappend` mf f `mappend` mf g `mappend` mf h `mappend` mf i `mappend` mf j `mappend` mf k `mappend` mf l
@@ -175,14 +191,15 @@ instance Show a => Show (Tuple12 a) where
 -- Testing Instances
 ------
 
-arb :: Arbitrary a => Gen a
-arb = arbitrary
 
-instance Arbitrary a => Arbitrary (Tuple6 a) where
-  arbitrary = t6 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+--arb :: Arbitrary a => Gen a
+--arb = arbitrary
 
-instance Arbitrary a => Arbitrary (Tuple8 a) where
-  arbitrary = t8 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+--instance Arbitrary a => Arbitrary (Tuple6 a) where
+--  arbitrary = t6 <$ arb <*> arb <*> arb <*> arb <*> arb <*> arb
 
-instance Arbitrary a => Arbitrary (Tuple12 a) where
-  arbitrary = t12 <$> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+--instance Arbitrary a => Arbitrary (Tuple8 a) where
+--  arbitrary = t8 <$ arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb
+
+--instance Arbitrary a => Arbitrary (Tuple12 a) where
+--  arbitrary = t12 <$ arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb <*> arb

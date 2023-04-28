@@ -1,4 +1,7 @@
--- |
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RebindableSyntax #-}
+  
+  -- |
 -- Module      :  Permutation
 -- Copyright   :  (c) Grant Goodman 2021
 -- Description :  Implementation of permutations
@@ -25,7 +28,7 @@ module Permutation
     (?.),
     (?-),
     (?),
-    one,
+    mempty,
     (?^),
     (?^?),
     (>?<),
@@ -52,12 +55,21 @@ module Permutation
   )
 where
 
-import Data.Group
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Modular
 import qualified Test.Tasty.QuickCheck as Q
+
+import NumericPrelude
+import Algebra.Ring as Ring
+import Algebra.Additive as Additive
+import Algebra.ToInteger as ToInteger
+import Data.Semigroup
+import Data.Monoid
+import Data.Group
+import qualified Algebra.IntegralDomain as IntegralDomain
+import qualified Algebra.ZeroTestable as ZeroTestable
 
 ------
 -- Permutations are bijections, thought of with a multiplicative group structure which acts from the left on the underlying set
@@ -69,12 +81,12 @@ newtype Permutation a = P (M.Map a a) deriving (Eq)
 -- | Construct a permutation from a list of cycles.
 --  On invalid input, returns the identity.
 p :: Ord a => [[a]] -> Permutation a
-p cs = fromMaybe one $ fromCycles cs
+p cs = fromMaybe mempty $ fromCycles cs
 
 -- | Construct a permutation from a list of pairs.
 --  On invalid input, returns the identity.
 pp :: Ord a => [(a, a)] -> Permutation a
-pp zs = fromMaybe one $ fromPairs zs
+pp zs = fromMaybe mempty $ fromPairs zs
 
 ------
 -- Instantiating type classes
@@ -95,7 +107,7 @@ instance Ord a => Group (Permutation a) where
 --  > (1 2 3)(4 5)
 showInline :: (Ord a, Show a) => Permutation a -> String
 showInline g
-  | g == one = "1"
+  | g == mempty = "1"
   | otherwise = concatMap showCycle $ toCycles g
   where
     showCycle xs = "(" ++ unwords (map show xs) ++ ")"
@@ -103,7 +115,7 @@ showInline g
 -- | Inserts a newline character between each cycle.
 showMultiline :: (Ord a, Show a) => Permutation a -> String
 showMultiline g
-  | g == one = "1"
+  | g == mempty = "1"
   | otherwise = L.intercalate "\n" (map showCycle (toCycles g))
   where
     showCycle xs = "(" ++ unwords (map show xs) ++ ")"
@@ -139,19 +151,13 @@ infixl 7 ?
 (?) :: (Ord a) => Permutation a -> Permutation a -> Permutation a
 (?) = mappend
 
--- | The identity (the identity permutation is often written as 1)
---
--- > one == p [[]]
-one :: (Ord a) => Permutation a
-one = mempty
-
--- | Exponentiation (including negative exponents)
+-- | Expmemptyntiation (including negative expmemptynts)
 --
 -- >>> p [[1,2,3,4,5]] ?^ 2
 -- (1 3 5 2 4)
 infixl 8 ?^
-(?^) :: (Ord a, Integral b) => Permutation a -> b -> Permutation a
-x ?^ 0 = one
+(?^) :: (Ord a, Eq b, IntegralDomain.C b, ZeroTestable.C b) => Permutation a -> b -> Permutation a
+x ?^ 0 = mempty
 x ?^ (-1) = invert x
 x ?^ n
   | even n = (x ? x) ?^ div n 2
@@ -162,21 +168,21 @@ x ?^ n
 -- > o ?^? q == q ?^ (-1) ? o ? q
 infix 8 ?^?
 (?^?) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o ?^? q = q ?^ (-1) ? o ? q
+o ?^? q = invert q ? o ? q
 
 -- | Commutator of two perumutations, i.e.,
 --
 -- > o >?< q == o ?^ (-1) ? q ?^ (-1) ? o ? q
 infix 7 >?<
 (>?<) :: Ord a => Permutation a -> Permutation a -> Permutation a
-o >?< q = o ?^ (-1) ? q ?^ (-1) ? o ? q
+o >?< q = invert o ? invert q ? o ? q
 
 -- | Parity of a permutation
 parity :: Ord a => Permutation a -> Mod2
 parity o = m2 $ foldr ((+) . (+ 1) . length) 0 (toCycles o)
 
 -- | Sign of a permutation
-sgn :: (Ord a, Integral b) => Permutation a -> b
+sgn :: (Ord a) => Permutation a -> Int
 sgn = ((-1) ^) . unmod . parity
 
 -- | Compute the order of a permutation.
@@ -199,7 +205,7 @@ support :: Ord a => Permutation a -> [a]
 support (P g) = M.keys g
 
 -- | Given z, decompose the permutation into an equivalent product of transpositions of the form (z x).
---  This can be done for any permutation and any z but is not unique.
+--  This can be dmempty for any permutation and any z but is not unique.
 --
 --  E.g.,
 --
@@ -221,7 +227,7 @@ transpositionDecomposition z o = concatMap cycleToTranspositions $ toCycles o
     createTranspositions (x : xs) = createTranspositions xs ++ [[z, x]]
 
 -- | Given z1, z2, decompose the permutation into an equivalent product of 3-cycles of the form (z1 z2 x) and (z2 z1 x).
--- This can be done for any even permutation and any z1 and z2 but is not unique.
+-- This can be dmempty for any even permutation and any z1 and z2 but is not unique.
 -- If the permutation is not even, the product will end in a transposition of the form (z1 x).
 --
 -- E.g.,
@@ -269,7 +275,7 @@ toPairs (P g) = M.toList g
 fromCycles :: Ord a => [[a]] -> Maybe (Permutation a)
 fromCycles = fmap mconcat . mapM fromCycle
   where
-    fromCycle [] = Just one
+    fromCycle [] = Just mempty
     fromCycle cs@(x : xs) = fromPairs $ zip cs $ xs ++ [x]
 
 toCycles :: Ord a => Permutation a -> [[a]]
@@ -291,4 +297,4 @@ toFunction (P g) x = M.findWithDefault x x g
 
 -- | Generate a random permutation of the given list. For use with "Test.QuickCheck".
 permutationOf :: Ord a => [a] -> Q.Gen (Permutation a)
-permutationOf xs = pp . zip xs <$> Q.shuffle xs
+permutationOf xs = fmap (pp . zip xs) $ Q.shuffle xs

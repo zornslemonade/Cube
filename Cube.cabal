@@ -27,11 +27,10 @@ source-repository head
 library
   exposed-modules:
       Cube
-      Cube.ClassicCube
-      Cube.SudokuCube
       Modular
       Permutable
       Permutation
+      TwistyPuzzle
   other-modules:
       Paths_Cube
   hs-source-dirs:
@@ -40,6 +39,7 @@ library
       base >=4.7 && <5
     , containers
     , groups
+    , numeric-prelude
     , tasty
     , tasty-quickcheck
   default-language: Haskell2010
@@ -58,6 +58,7 @@ test-suite cube-test
     , base >=4.7 && <5
     , containers
     , groups
+    , numeric-prelude
     , tasty
     , tasty-quickcheck
   default-language: Haskell2010

@@ -1,3 +1,8 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE InstanceSigs #-}
+
 -- |
 -- Module      :  Cube
 -- Copyright   :  (c) Grant Goodman 2021
@@ -42,12 +47,6 @@ module Cube
     showCube,
     ASCIICube (..),
 
-    -- * Basic operations
-    (|#|),
-    (|#|^),
-    (|#|^|#|),
-    (>|#|<),
-
     -- * Permutation representations
     Cubie (..),
     toPermutation,
@@ -70,7 +69,6 @@ module Cube
 where
 
 import qualified Data.Function as F
-import Data.Group
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
@@ -78,6 +76,16 @@ import Modular
 import Permutable
 import Permutation
 import qualified Test.Tasty.QuickCheck as Q
+import TwistyPuzzle
+
+import NumericPrelude
+import Algebra.Ring as Ring
+import Algebra.Additive as Additive
+import Algebra.ToInteger as ToInteger
+import Data.Semigroup
+import Data.Monoid
+import Data.Group
+import Data.Foldable (Foldable)
 
 ------
 -- Defining the CubeConfiguration type
@@ -243,9 +251,9 @@ instance Monoid CubeConfiguration where
 instance Group CubeConfiguration where
   invert (Cube (a, b, c, xs, ys, zs)) = Cube (a', b', c', xs', ys', zs')
     where
-      a' = a ?^ (-1)
-      b' = b ?^ (-1)
-      c' = c ?^ (-1)
+      a' = invert a
+      b' = invert b
+      c' = invert c
       xs' = a ?* (- xs)
       ys' = b ?* (- ys)
       zs' = c ?* (- zs)
@@ -253,27 +261,6 @@ instance Group CubeConfiguration where
 ------
 -- Shorthand for the group operations
 ------
-
-class TwistyPuzzle a where
-  -- | Composition of cube configurations
-  infixl 7 |#|
-  (|#|) :: a -> a -> a
-
-  -- | Exponentiation (including negative exponents)
-  infixl 8 |#|^
-  (|#|^) :: Integral b => a -> b -> a
-
-  -- | Conjugation of cube configurations, i.e.,
-  --
-  -- > g |#|^|#| h == h |#|^ (-1) |#| g |#| h
-  infix 8 |#|^|#|
-  (|#|^|#|) :: a -> a -> a
-
-  -- | Commutator of cube configurations, i.e.,
-  --
-  -- > g >|#|< h == g |#|^ (-1) |#| h |#|^ (-1) |#| g |#| h
-  infix 7 >|#|<
-  (>|#|<) :: a -> a -> a
 
 instance TwistyPuzzle CubeConfiguration where
   x |#| y = x <> y
@@ -284,6 +271,7 @@ instance TwistyPuzzle CubeConfiguration where
     | even n = (x |#| x) |#|^ div n 2
     | otherwise = x |#| (x |#| x) |#|^ div n 2
 
+  (|#|^|#|) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
   x |#|^|#| y = invert y |#| x |#| y
 
   x >|#|< y = invert x |#| invert y |#| x |#| y
@@ -294,55 +282,55 @@ instance TwistyPuzzle CubeConfiguration where
 
 -- Identity (no change)
 i :: CubeConfiguration
-i = Cube (one, one, one, 0, 0, 0)
+i = Cube (mempty, mempty, mempty, 0, 0, 0)
 
 -- Up (Clockwise)
 u :: CubeConfiguration
-u = Cube (one, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
+u = Cube (mempty, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
 
 -- Up (Counterclockwise)
 u' :: CubeConfiguration
-u' = Cube (one, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
+u' = Cube (mempty, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
 
 -- Front (Clockwise)
 f :: CubeConfiguration
-f = Cube (one, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f = Cube (mempty, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Front (Counterclockwise)
 f' :: CubeConfiguration
-f' = Cube (one, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f' = Cube (mempty, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Left (Clockwise)
 l :: CubeConfiguration
-l = Cube (one, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l = Cube (mempty, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Left (Counterclockwise)
 l' :: CubeConfiguration
-l' = Cube (one, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l' = Cube (mempty, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Back (Clockwise)
 b :: CubeConfiguration
-b = Cube (one, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b = Cube (mempty, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Back (Counterclockwise)
 b' :: CubeConfiguration
-b' = Cube (one, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b' = Cube (mempty, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Right (Clockwise)
 r :: CubeConfiguration
-r = Cube (one, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r = Cube (mempty, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Right (Counterclockwise)
 r' :: CubeConfiguration
-r' = Cube (one, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r' = Cube (mempty, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Down (Clockwise)
 d :: CubeConfiguration
-d = Cube (one, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
+d = Cube (mempty, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
 
 -- Down (Counterclockwise)
 d' :: CubeConfiguration
-d' = Cube (one, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
+d' = Cube (mempty, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
 
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
@@ -452,7 +440,7 @@ isEdgeCubie (E _ _) = True
 isEdgeCubie _ = False
 
 isVertexCubie :: Cubie -> Bool
-isVertexCubie (C _ _) = True
+isVertexCubie (V _ _) = True
 isVertexCubie _ = False
 
 getCubieNumber :: Cubie -> Integer
@@ -471,7 +459,6 @@ getCubieNumber (V n _) = n
 -- X encodes whether it is a center, edge, or vertex cubie (taking the values 'C', 'E', or 'V', respectively), n represents the cubie
 -- the sticker is attached to, and m represents the face of that cubie that the sticker is attached to.
 -- For center cubies, m represents the orientation of the sticker.
--- Orientations are not represented as modular integers here for type reasons.
 toPermutation :: CubeConfiguration -> Permutation Cubie
 toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
@@ -547,6 +534,9 @@ order = Permutation.order . toPermutation
 -- Solving the Rubik's Cube
 ------
 
+sumFold :: (Foldable t, Additive.C a) => t a -> a
+sumFold = foldr (+) zero
+
 -- |
 -- Two elements are similar when one can be obtained from the other via a sequence of basic turns
 -- This is a congruence relation.
@@ -555,9 +545,9 @@ isSimilarTo (Cube (a, b, c, xs, ys, zs)) (Cube (a', b', c', xs', ys', zs')) = t1
   where
     t1 = a == a'
     t2 = sgn b * sgn c == sgn b' * sgn c'
-    t3 = sgn b * (-1) ^ unmod (sum xs) == sgn b' * (-1) ^ unmod (sum xs')
-    t4 = sum ys == sum ys'
-    t5 = sum zs == sum zs'
+    t3 = sgn b * (-1) ^ unmod (sumFold xs) == sgn b' * (-1) ^ unmod (sumFold xs')
+    t4 = sumFold ys == sumFold ys'
+    t5 = sumFold zs == sumFold zs'
 
 -- | An element is legal if it is generated by the basic turns.
 -- This is equivalent to being similar to the identity configuration.
@@ -565,10 +555,10 @@ isSimilarTo (Cube (a, b, c, xs, ys, zs)) (Cube (a', b', c', xs', ys', zs')) = t1
 -- An equivalent characterization is that Cube (a,b,c,xs,ys,zs) is legal exactly when
 -- a = 1  (The centers are unmoved)
 -- sgn b = sgn c (For each pair of edge cubies swapped, a pair of vertex cubies is also swapped and vice versa)
--- sgn b = (-1)^(sum xs) (For each pair of edge cubies swapped, a center cubie is turned once and vice versa)
--- [(-1)^(sum xs) since sum xs is in Z_4]
--- sum ys = 0 (Edge cubies are flipped in pairs)
--- sum zs = 0 (Vertex cubies are turned in opposite pairs--if one is turned cw, another is turned ccw)
+-- sgn b = (-1)^(sumFold xs) (For each pair of edge cubies swapped, a center cubie is turned once and vice versa)
+-- [(-1)^(sumFold xs) since sumFold xs is in Z_4]
+-- sumFold ys = 0 (Edge cubies are flipped in pairs)
+-- sumFold zs = 0 (Vertex cubies are turned in opposite pairs--if one is turned cw, another is turned ccw)
 -- This means that the Legal Cube Group is isomorphic to the Cube Group quotiented by
 -- S_6
 -- Three copies of Z_2
@@ -608,7 +598,7 @@ solve :: CubeConfiguration -> Maybe [Turn]
 solve = fmap invertTurns . generate
 
 orientCenters :: CubeConfiguration -> [Turn]
-orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence (toPairList xs)
+orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence (toPairList xs :: [(Int, Mod4)])
   where
     modToSequence (n, k) = replicate (fromInteger $ unmod k) $
       case n of
@@ -641,7 +631,7 @@ positionEdges (Cube (_, b, _, _, _, _)) = concatMap transpositionToSequence (tra
         _ -> []
 
 orientEdges :: CubeConfiguration -> [Turn]
-orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ toPairList ys
+orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ (toPairList ys :: [(Int, Mod2)])
   where
     x = [L, U', L', U, L', F, L, F']
     y = [R', U, R, U', R, F', R', F]
@@ -682,7 +672,7 @@ positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ th
       _ -> []
 
 orientVertices :: CubeConfiguration -> [Turn]
-orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ tail $ toPairList zs
+orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ tail $ (toPairList zs :: [(Int, Mod3)])
   where
     x = [U, L, F', L', F, L, F', L', F, U', F', L, F, L', F', L, F, L']
     y = [U, R', F, R, F', R', F, R, F', U', F, R', F', R, F, R', F', R]
@@ -732,7 +722,7 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 -- >               |---+---+---|
 -- >               | ~ | ~ | ~ |
 -- >                -----------
-newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq)
+newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq, Semigroup, Monoid, Group)
 
 instance Show ASCIICube where
   show (ShowCube g) = showCube g
@@ -918,14 +908,14 @@ arbVertexP :: Q.Gen VertexP
 arbVertexP = permutationOf [1 .. 8]
 
 -- For orientations, arbitrary elements can be generated via the instances defined for their components
-arbCenterO :: Q.Gen CenterO
-arbCenterO = Q.arbitrary
+--arbCenterO :: Q.Gen CenterO
+--arbCenterO = Q.arbitrary
 
-arbEdgeO :: Q.Gen EdgeO
-arbEdgeO = Q.arbitrary
+--arbEdgeO :: Q.Gen EdgeO
+--arbEdgeO = Q.arbitrary
 
-arbVertexO :: Q.Gen VertexO
-arbVertexO = Q.arbitrary
+--arbVertexO :: Q.Gen VertexO
+--arbVertexO = Q.arbitrary
 
 {-
 >>> Q.generate $ ShowCube <$> (Q.arbitrary :: Q.Gen CubeConfiguration)
@@ -951,5 +941,5 @@ arbVertexO = Q.arbitrary
                 | ~ |:::| X |
                  -----------
 -}
-instance Q.Arbitrary CubeConfiguration where
-  arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
+-- instance Q.Arbitrary CubeConfiguration where
+--  arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
