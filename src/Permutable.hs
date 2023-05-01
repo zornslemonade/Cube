@@ -19,7 +19,7 @@ where
 import Control.Applicative (Applicative (pure), (<$>), (<*>))
 import Data.Foldable (Foldable (foldMap), toList)
 import qualified Data.Map as M
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 import Data.Traversable (Traversable, traverse)
 import NumericPrelude
 import Permutation (Permutation, (?.), (?^))
@@ -35,11 +35,10 @@ class (Foldable z) => Indexable z where
   (*!) :: z a -> Integer -> Maybe a
   (*!) = flip M.lookup . toMap
 
-  -- \| Unsafe Indexing
-  infixl 9 *!!
-  (*!!) :: z a -> Integer -> a
-  x *!! n = fromJust $ x *! n
-
+  -- \| Indexing with default
+  index :: z a -> a-> Integer -> a
+  index x a n = fromMaybe a (x *! n)
+  
   -- \| Label each element with its index
   labelIndices :: z a -> z (Integer, a)
 

@@ -90,6 +90,7 @@ import qualified Permutation as P
 import qualified Test.Tasty.QuickCheck as Q
 import Tuple
 import TwistyPuzzle
+import Number.SI.Unit (k2)
 
 ------
 -- Defining the CubeConfiguration type
@@ -474,6 +475,7 @@ getCubieNumber (V n _) = n
 toPermutation :: CubeConfiguration -> Permutation Cubie
 toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
+    t *!! n = index t 0 n
     a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
     b' = pp [(E n k, E (b ?. n) (ys *!! n + k)) | n <- [1 .. 12], k <- [0, 1]]
     c' = pp [(V n k, V (c ?. n) (zs *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
@@ -520,6 +522,7 @@ fromPermutation o = Cube (a, b, c, xs, ys, zs)
 toNumericPermutation :: CubeConfiguration -> Permutation Integer
 toNumericPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
+    t *!! n = index t 0 n
     a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
     b' = pp [(n + 12 * unmod k + 24, (b ?. n) + 12 * unmod (ys *!! n + k) + 24) | n <- [1 .. 12], k <- [0, 1]]
     c' = pp [(n + 8 * unmod k + 48, (c ?. n) + 8 * unmod (zs *!! n + k) + 48) | n <- [1 .. 8], k <- [0, 1, 2]]
