@@ -1,26 +1,36 @@
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module CubeTest (cubeTests) where
 
+import Algebra.Additive as Additive
+import Algebra.Ring as Ring
+import Algebra.ToInteger as ToInteger
 import Cube
-import Permutable
-import Permutation (p, one)
 import Data.Group
+import NumericPrelude
+import Permutable
+import Permutation (p)
+import qualified Permutation as P
 import Test.Tasty
 import Test.Tasty.QuickCheck
+import Tuple
+import TwistyPuzzle
 
 i = turnToConfig I
 
 -- Example configurations for testing
 flippedEdges :: CubeConfiguration
-flippedEdges = Cube (one, one, one, 0, T12 (1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdges = Cube (P.i, P.i, P.i, 0, T12 (1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
 
 flippedEdgesIllegal :: CubeConfiguration
-flippedEdgesIllegal = Cube (one, one, one, 0, T12 (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdgesIllegal = Cube (P.i, P.i, P.i, 0, T12 (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
 
 swappedVertices :: CubeConfiguration
-swappedVertices = Cube (one, one, p [[1, 2, 3]], 0, 0, 0)
+swappedVertices = Cube (P.i, P.i, p [[1, 2, 3]], 0, 0, 0)
 
 swappedVerticesIllegal :: CubeConfiguration
-swappedVerticesIllegal = Cube (one, one, p [[1, 2]], 0, 0, 0)
+swappedVerticesIllegal = Cube (P.i, P.i, p [[1, 2]], 0, 0, 0)
 
 similarityExample1 :: CubeConfiguration
 similarityExample1 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 9, 7, 5, 2, 8, 10, 12, 3, 4, 11, 6]], p [[1, 5, 3], [4, 6, 8, 7]], T6 (2, 0, 1, 1, 0, 0), T12 (0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0), T8 (1, 1, 0, 0, 1, 1, 1, 2))
@@ -30,33 +40,34 @@ similarityExample2 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 2, 3]], p [[]], T6 (1, 0,
 
 -- Properties of the basic operationsS
 prop_associative :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration -> Bool
-prop_associative g h k = (g # h) # k == g # (h # k)
+prop_associative g h k = (g |#| h) |#| k == g |#| (h |#| k)
 
 prop_identity :: CubeConfiguration -> Bool
-prop_identity g = g # i == g && i # g == g
+prop_identity g = g |#| i == g && i |#| g == g
 
 prop_inverse :: CubeConfiguration -> Bool
-prop_inverse g = invert g # g == i && g # invert g == i
+prop_inverse g = invert g |#| g == i && g |#| invert g == i
 
 prop_exponent :: CubeConfiguration -> Int -> Bool
 prop_exponent g n
-  | n >= 0 = g #^ n == foldr (#) i (replicate n g)
-  | otherwise = g #^ n == foldr (#) i (replicate (abs n) (invert g))
+  | n >= 0 = g |#|^ n == foldr (|#|) i (replicate n g)
+  | otherwise = g |#|^ n == foldr (|#|) i (replicate (-n) (invert g))
 
 prop_order :: CubeConfiguration -> Bool
-prop_order g = g #^ order g == i
+prop_order g = g |#|^ order g == i
 
 -- Tests for the basic operations
 basicOperationTests :: TestTree
 basicOperationTests =
   testGroup
     "Tests of the basic operations"
-    [ testProperty "Associativity of #" prop_associative,
-      testProperty "The identity of # is I" prop_identity,
+    [ testProperty "Associativity of |#|" prop_associative,
+      testProperty "The identity of |#| is I" prop_identity,
       testProperty "Inverses are given by invert" prop_inverse,
-      testProperty "Exponentiation is given by #^" prop_exponent,
+      testProperty "Exponentiation is given by |#|^" prop_exponent,
       testProperty "Exponentiation order cancellation" prop_order
     ]
+
 -- Properties of the basic turns
 
 prop_order_turn :: Turn -> Bool
@@ -66,10 +77,10 @@ prop_order_turn m =
     _ -> (== 4) . order . turnToConfig $ m
 
 prop_inverse_turn :: Turn -> Bool
-prop_inverse_turn m = turnToConfig m # turnToConfig (invertTurn m) == i && turnToConfig (invertTurn m) # turnToConfig m == i
+prop_inverse_turn m = turnToConfig m |#| turnToConfig (invertTurn m) == i && turnToConfig (invertTurn m) |#| turnToConfig m == i
 
 prop_inverse_turns :: [Turn] -> Bool
-prop_inverse_turns m = turnsToConfig m # turnsToConfig (invertTurns m) == i && turnsToConfig (invertTurns m) # turnsToConfig m == i
+prop_inverse_turns m = turnsToConfig m |#| turnsToConfig (invertTurns m) == i && turnsToConfig (invertTurns m) |#| turnsToConfig m == i
 
 prop_legal_turn :: Turn -> Bool
 prop_legal_turn = isLegal . turnToConfig
@@ -106,7 +117,7 @@ prop_reflexivity :: CubeConfiguration -> Bool
 prop_reflexivity g = g `isSimilarTo` g
 
 prop_similarity :: CubeConfiguration -> [Turn] -> Bool
-prop_similarity g ms = let g' = g # turnsToConfig ms in g `isSimilarTo` g' && g' `isSimilarTo` g
+prop_similarity g ms = let g' = g |#| turnsToConfig ms in g `isSimilarTo` g' && g' `isSimilarTo` g
 
 prop_similarity_example :: Bool
 prop_similarity_example = similarityExample1 `isSimilarTo` similarityExample2 && similarityExample2 `isSimilarTo` similarityExample1
@@ -138,17 +149,17 @@ prop_solution :: [Turn] -> Bool
 prop_solution ms =
   let g = turnsToConfig ms
    in case solve g of
-        Just ms' -> let g' = turnsToConfig ms' in g # g' == i && g' # g == i
+        Just ms' -> let g' = turnsToConfig ms' in g |#| g' == i && g' |#| g == i
         Nothing -> False
 
 prop_solution_example1 :: Bool
 prop_solution_example1 = case solve flippedEdges of
-  Just ms -> let g = turnsToConfig ms in g # flippedEdges == i && flippedEdges # g == i
+  Just ms -> let g = turnsToConfig ms in g |#| flippedEdges == i && flippedEdges |#| g == i
   Nothing -> False
 
 prop_solution_example2 :: Bool
 prop_solution_example2 = case solve swappedVertices of
-  Just ms -> let g = turnsToConfig ms in g # swappedVertices == i && swappedVertices # g == i
+  Just ms -> let g = turnsToConfig ms in g |#| swappedVertices == i && swappedVertices |#| g == i
   Nothing -> False
 
 prop_no_solution_example1 :: Bool

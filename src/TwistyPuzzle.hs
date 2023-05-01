@@ -1,5 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 -- Module      :  Twisty Puzzle
@@ -12,15 +12,11 @@
 -- A module for working with twisty puzzles
 module TwistyPuzzle (TwistyPuzzle (..)) where
 
-import NumericPrelude
-import Algebra.Ring as Ring
-import Algebra.Additive as Additive
-import Algebra.ToInteger as ToInteger
-import Data.Semigroup
-import Data.Monoid
-import Data.Group
 import qualified Algebra.IntegralDomain as IntegralDomain
 import qualified Algebra.ZeroTestable as ZeroTestable
+import Data.Group ( Group(invert) )
+import Data.Monoid ( (<>), Monoid(mempty) )
+import NumericPrelude
 
 class (Group a) => TwistyPuzzle a where
   -- | Composition of puzzle configurations
@@ -54,3 +50,5 @@ class (Group a) => TwistyPuzzle a where
 
   (>|#|<) :: a -> a -> a
   x >|#|< y = invert x |#| invert y |#| x |#| y
+
+  {-# MINIMAL (|#|) #-}

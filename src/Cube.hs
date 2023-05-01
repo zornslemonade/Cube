@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 -- Module      :  Cube
@@ -68,24 +68,28 @@ module Cube
   )
 where
 
+import qualified Algebra.Additive as Additive
+import qualified Algebra.IntegralDomain as IntegralDomain
+import qualified Algebra.Ring as Ring
+import qualified Algebra.ToInteger as ToInteger
+import qualified Algebra.ZeroTestable as ZeroTestable
+import Control.Applicative (Applicative ((<*>)), (<$>))
+import Data.Foldable (Foldable)
 import qualified Data.Function as F
+import Data.Group (Group (invert))
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
+import Data.Monoid (Monoid (mempty), (<>))
+import Data.Semigroup (Semigroup ((<>)))
 import Modular
-import Permutable
-import Permutation
-import qualified Test.Tasty.QuickCheck as Q
-import TwistyPuzzle
-
 import NumericPrelude
-import Algebra.Ring as Ring
-import Algebra.Additive as Additive
-import Algebra.ToInteger as ToInteger
-import Data.Semigroup
-import Data.Monoid
-import Data.Group
-import Data.Foldable (Foldable)
+import Permutable
+import Permutation hiding (i)
+import qualified Permutation as P
+import qualified Test.Tasty.QuickCheck as Q
+import Tuple
+import TwistyPuzzle
 
 ------
 -- Defining the CubeConfiguration type
@@ -217,6 +221,7 @@ showCubeConfig :: CubeConfiguration -> String
 showCubeConfig (Cube (a, b, c, xs, ys, zs)) = L.intercalate "\n" [showInline a, showInline b, showInline c, show xs, show ys, show zs]
 
 instance Show CubeConfiguration where
+  show :: CubeConfiguration -> String
   show = showCubeConfig
 
 ------
@@ -235,6 +240,7 @@ instance Show CubeConfiguration where
 -- Neglecting center cubie orientation is equivalent to quotienting by Z_4^6 (which is a normal subgroup)
 -- This has order 373697308291592355840000
 instance Semigroup CubeConfiguration where
+  (<>) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
   (Cube (a1, b1, c1, xs1, ys1, zs1)) <> (Cube (a2, b2, c2, xs2, ys2, zs2)) = Cube (a, b, c, xs, ys, zs)
     where
       a = a1 ? a2
@@ -246,25 +252,29 @@ instance Semigroup CubeConfiguration where
 
 -- The identity configuration will be given below
 instance Monoid CubeConfiguration where
+  mempty :: CubeConfiguration
   mempty = i
 
 instance Group CubeConfiguration where
+  invert :: CubeConfiguration -> CubeConfiguration
   invert (Cube (a, b, c, xs, ys, zs)) = Cube (a', b', c', xs', ys', zs')
     where
       a' = invert a
       b' = invert b
       c' = invert c
-      xs' = a ?* (- xs)
-      ys' = b ?* (- ys)
-      zs' = c ?* (- zs)
+      xs' = a ?* (-xs)
+      ys' = b ?* (-ys)
+      zs' = c ?* (-zs)
 
 ------
 -- Shorthand for the group operations
 ------
 
 instance TwistyPuzzle CubeConfiguration where
+  (|#|) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
   x |#| y = x <> y
 
+  (|#|^) :: (Eq b, IntegralDomain.C b, ZeroTestable.C b) => CubeConfiguration -> b -> CubeConfiguration
   x |#|^ 0 = i
   x |#|^ (-1) = invert x
   x |#|^ n
@@ -274,6 +284,7 @@ instance TwistyPuzzle CubeConfiguration where
   (|#|^|#|) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
   x |#|^|#| y = invert y |#| x |#| y
 
+  (>|#|<) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
   x >|#|< y = invert x |#| invert y |#| x |#| y
 
 ------
@@ -282,55 +293,55 @@ instance TwistyPuzzle CubeConfiguration where
 
 -- Identity (no change)
 i :: CubeConfiguration
-i = Cube (mempty, mempty, mempty, 0, 0, 0)
+i = Cube (P.i, P.i, P.i, 0, 0, 0)
 
 -- Up (Clockwise)
 u :: CubeConfiguration
-u = Cube (mempty, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
+u = Cube (P.i, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
 
 -- Up (Counterclockwise)
 u' :: CubeConfiguration
-u' = Cube (mempty, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
+u' = Cube (P.i, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
 
 -- Front (Clockwise)
 f :: CubeConfiguration
-f = Cube (mempty, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f = Cube (P.i, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Front (Counterclockwise)
 f' :: CubeConfiguration
-f' = Cube (mempty, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f' = Cube (P.i, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
 
 -- Left (Clockwise)
 l :: CubeConfiguration
-l = Cube (mempty, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l = Cube (P.i, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Left (Counterclockwise)
 l' :: CubeConfiguration
-l' = Cube (mempty, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l' = Cube (P.i, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
 
 -- Back (Clockwise)
 b :: CubeConfiguration
-b = Cube (mempty, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b = Cube (P.i, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Back (Counterclockwise)
 b' :: CubeConfiguration
-b' = Cube (mempty, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b' = Cube (P.i, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
 
 -- Right (Clockwise)
 r :: CubeConfiguration
-r = Cube (mempty, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r = Cube (P.i, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Right (Counterclockwise)
 r' :: CubeConfiguration
-r' = Cube (mempty, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r' = Cube (P.i, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
 
 -- Down (Clockwise)
 d :: CubeConfiguration
-d = Cube (mempty, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
+d = Cube (P.i, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
 
 -- Down (Counterclockwise)
 d' :: CubeConfiguration
-d' = Cube (mempty, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
+d' = Cube (P.i, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
 
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
@@ -365,6 +376,7 @@ data Turn
 
 -- | Counter-clockwise turns are represented as strings with lowercase letters, instead of with apostrophes.
 instance Show Turn where
+  show :: Turn -> String
   show m =
     case m of
       I -> "I"
@@ -462,9 +474,9 @@ getCubieNumber (V n _) = n
 toPermutation :: CubeConfiguration -> Permutation Cubie
 toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
-    a' = pp [(C n k, C (a ?. n) (xs *! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
-    b' = pp [(E n k, E (b ?. n) (ys *! n + k)) | n <- [1 .. 12], k <- [0, 1]]
-    c' = pp [(V n k, V (c ?. n) (zs *! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
+    a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+    b' = pp [(E n k, E (b ?. n) (ys *!! n + k)) | n <- [1 .. 12], k <- [0, 1]]
+    c' = pp [(V n k, V (c ?. n) (zs *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
 
 fromPermutation :: Permutation Cubie -> CubeConfiguration
 fromPermutation o = Cube (a, b, c, xs, ys, zs)
@@ -473,9 +485,9 @@ fromPermutation o = Cube (a, b, c, xs, ys, zs)
     a = pp $ map getCubieNumbers $ filter (isCenterCubie . fst) $ toPairs o
     b = pp $ map getCubieNumbers $ filter (isEdgeCubie . fst) $ toPairs o
     c = pp $ map getCubieNumbers $ filter (isVertexCubie . fst) $ toPairs o
-    xs = fromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
-    ys = fromList [case o ?. E n 0 of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
-    zs = fromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
+    xs = t6FromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
+    ys = t12FromList [case o ?. E n 0 of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
+    zs = t8FromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 -- |
 -- This sends a configuration to the same permutation of stickers, but with each sticker represented as a number between 1 and 72
@@ -508,9 +520,9 @@ fromPermutation o = Cube (a, b, c, xs, ys, zs)
 toNumericPermutation :: CubeConfiguration -> Permutation Integer
 toNumericPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
   where
-    a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
-    b' = pp [(n + 12 * unmod k + 24, (b ?. n) + 12 * unmod (ys *! n + k) + 24) | n <- [1 .. 12], k <- [0, 1]]
-    c' = pp [(n + 8 * unmod k + 48, (c ?. n) + 8 * unmod (zs *! n + k) + 48) | n <- [1 .. 8], k <- [0, 1, 2]]
+    a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+    b' = pp [(n + 12 * unmod k + 24, (b ?. n) + 12 * unmod (ys *!! n + k) + 24) | n <- [1 .. 12], k <- [0, 1]]
+    c' = pp [(n + 8 * unmod k + 48, (c ?. n) + 8 * unmod (zs *!! n + k) + 48) | n <- [1 .. 8], k <- [0, 1, 2]]
 
 fromNumericPermutation :: Permutation Integer -> CubeConfiguration
 fromNumericPermutation o = Cube (a, b, c, xs, ys, zs)
@@ -518,9 +530,9 @@ fromNumericPermutation o = Cube (a, b, c, xs, ys, zs)
     a = pp [(n, ((o ?. n) - 1) `mod` 6 + 1) | n <- [1 .. 6]]
     b = pp [(n, ((o ?. (n + 24)) - 25) `mod` 12 + 1) | n <- [1 .. 12]]
     c = pp [(n, ((o ?. (n + 48)) - 49) `mod` 8 + 1) | n <- [1 .. 8]]
-    xs = fromList $ [fromInteger $ (o ?. n) `div` 6 - n `div` 6 | n <- [1 .. 6]]
-    ys = fromList $ [fromInteger $ (o ?. (n + 24)) `div` 12 - (n + 24) `div` 12 | n <- [1 .. 12]]
-    zs = fromList $ [fromInteger $ (o ?. (n + 48)) `div` 8 - (n + 48) `div` 8 | n <- [1 .. 8]]
+    xs = t6FromList $ [fromInteger $ (o ?. n) `div` 6 - n `div` 6 | n <- [1 .. 6]]
+    ys = t12FromList $ [fromInteger $ (o ?. (n + 24)) `div` 12 - (n + 24) `div` 12 | n <- [1 .. 12]]
+    zs = t8FromList $ [fromInteger $ (o ?. (n + 48)) `div` 8 - (n + 48) `div` 8 | n <- [1 .. 8]]
 
 ------
 -- Useful group functions
@@ -598,7 +610,7 @@ solve :: CubeConfiguration -> Maybe [Turn]
 solve = fmap invertTurns . generate
 
 orientCenters :: CubeConfiguration -> [Turn]
-orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence (toPairList xs :: [(Int, Mod4)])
+orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence $ M.toList $ toMap xs
   where
     modToSequence (n, k) = replicate (fromInteger $ unmod k) $
       case n of
@@ -631,7 +643,7 @@ positionEdges (Cube (_, b, _, _, _, _)) = concatMap transpositionToSequence (tra
         _ -> []
 
 orientEdges :: CubeConfiguration -> [Turn]
-orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ (toPairList ys :: [(Int, Mod2)])
+orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ M.toList $ toMap ys
   where
     x = [L, U', L', U, L', F, L, F']
     y = [R', U, R, U', R, F', R', F]
@@ -672,7 +684,7 @@ positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ th
       _ -> []
 
 orientVertices :: CubeConfiguration -> [Turn]
-orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ tail $ (toPairList zs :: [(Int, Mod3)])
+orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ tail $ M.toList (toMap zs)
   where
     x = [U, L, F', L', F, L, F', L', F, U', F', L, F, L', F', L, F, L']
     y = [U, R', F, R, F', R', F, R, F', U', F, R', F', R, F, R', F', R]
@@ -725,12 +737,17 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq, Semigroup, Monoid, Group)
 
 instance Show ASCIICube where
+  show :: ASCIICube -> String
   show (ShowCube g) = showCube g
 
 instance TwistyPuzzle ASCIICube where
+  (|#|) :: ASCIICube -> ASCIICube -> ASCIICube
   (ShowCube x) |#| (ShowCube y) = ShowCube (x |#| y)
+  (|#|^) :: (Eq b, IntegralDomain.C b, ZeroTestable.C b) => ASCIICube -> b -> ASCIICube
   (ShowCube x) |#|^ n = ShowCube (x |#|^ n)
+  (|#|^|#|) :: ASCIICube -> ASCIICube -> ASCIICube
   (ShowCube x) |#|^|#| (ShowCube y) = ShowCube (x |#|^|#| y)
+  (>|#|<) :: ASCIICube -> ASCIICube -> ASCIICube
   (ShowCube x) >|#|< (ShowCube y) = ShowCube (x >|#|< y)
 
 -- Lookup table that assigns to each sticker color a string used in its visual representation
@@ -895,6 +912,7 @@ showCube = showCubeCustom $ M.fromAscList [(x, colorLookup M.! (stickerLookup M.
 ------
 
 instance Q.Arbitrary Turn where
+  arbitrary :: Q.Gen Turn
   arbitrary = Q.elements [I, U, U', F, F', L, L', B, B', R, R', D, D']
 
 -- Arbitrary permutations of cubies are just random permutations of the corresponding subset of Integer
@@ -908,14 +926,14 @@ arbVertexP :: Q.Gen VertexP
 arbVertexP = permutationOf [1 .. 8]
 
 -- For orientations, arbitrary elements can be generated via the instances defined for their components
---arbCenterO :: Q.Gen CenterO
---arbCenterO = Q.arbitrary
+arbCenterO :: Q.Gen CenterO
+arbCenterO = Q.arbitrary
 
---arbEdgeO :: Q.Gen EdgeO
---arbEdgeO = Q.arbitrary
+arbEdgeO :: Q.Gen EdgeO
+arbEdgeO = Q.arbitrary
 
---arbVertexO :: Q.Gen VertexO
---arbVertexO = Q.arbitrary
+arbVertexO :: Q.Gen VertexO
+arbVertexO = Q.arbitrary
 
 {-
 >>> Q.generate $ ShowCube <$> (Q.arbitrary :: Q.Gen CubeConfiguration)
@@ -941,5 +959,6 @@ arbVertexP = permutationOf [1 .. 8]
                 | ~ |:::| X |
                  -----------
 -}
--- instance Q.Arbitrary CubeConfiguration where
---  arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO
+instance Q.Arbitrary CubeConfiguration where
+  arbitrary :: Q.Gen CubeConfiguration
+  arbitrary = cube <$> arbCenterP <*> arbEdgeP <*> arbVertexP <*> arbCenterO <*> arbEdgeO <*> arbVertexO

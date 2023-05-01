@@ -27,18 +27,21 @@ source-repository head
 library
   exposed-modules:
       Cube
-      Modular
-      Permutable
-      Permutation
-      TwistyPuzzle
+    , Modular
+    , Permutable
+    , Permutation
+    , Tuple
+    , TwistyPuzzle
   other-modules:
       Paths_Cube
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , array
     , containers
     , groups
+    , monoid-extras
     , numeric-prelude
     , tasty
     , tasty-quickcheck
@@ -49,7 +52,9 @@ test-suite cube-test
   main-is: Test.hs
   other-modules:
       CubeTest
-      Paths_Cube
+    , PermutationTest
+    , TupleTest
+    , Paths_Cube
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N

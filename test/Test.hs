@@ -1,12 +1,16 @@
-import CubeTest
+import CubeTest (cubeTests)
+import PermutationTest (permutationTests)
 import Test.Tasty
+import TupleTest (tupleTests)
 
 -- Run all tests
 fullTests :: TestTree
 fullTests =
   testGroup
     "All Tests"
-    [ cubeTests
+    [ permutationTests,
+      tupleTests,
+      cubeTests
     ]
 
 main :: IO ()
