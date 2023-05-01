@@ -615,7 +615,7 @@ solve = fmap invertTurns . generate
 orientCenters :: CubeConfiguration -> [Turn]
 orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence $ M.toList $ toMap xs
   where
-    modToSequence (n, k) = replicate (fromInteger $ unmod k) $
+    modToSequence (n, k) = replicate (unmod k) $
       case n of
         1 -> U
         2 -> F
@@ -646,12 +646,12 @@ positionEdges (Cube (_, b, _, _, _, _)) = concatMap transpositionToSequence (tra
         _ -> []
 
 orientEdges :: CubeConfiguration -> [Turn]
-orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ M.toList $ toMap ys
+orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ M.toList $ toMap ys
   where
     x = [L, U', L', U, L', F, L, F']
     y = [R', U, R, U', R, F', R', F]
     modToSequence (n, k) = concat $
-      replicate (fromInteger $ unmod k) $
+      replicate (unmod k) $
         case n of
           2 -> x
           3 -> [B', L'] ++ x ++ [L, B]
@@ -669,8 +669,8 @@ orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ tail $ M.toLi
 positionVertices :: CubeConfiguration -> [Turn]
 positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ threeCycleDecomposition 1 2 c
   where
-    x = [L, F', L', F, L, F', L', F, L, F', L', F, U, U, L, F', L', F, L, F', L', F, L, F', L', F, U', L, F', L', F, L, F', L', F, L, F', L', F, U', L, F', L', F, L, F', L', F, L, F', L', F]
-    y = [F', L, F, L', F', L, F, L', F', L, F, L', U, F', L, F, L', F', L, F, L', F', L, F, L', U, F', L, F, L', F', L, F, L', F', L, F, L', U, U, F', L, F, L', F', L, F, L', F', L, F, L']
+    x = [L,F',L',F,L,F',L',F,L,F',L',F,U,U,L,F',L',F,L,F',L',F,L,F',L',F,U',L,F',L',F,L,F',L',F,L,F',L',F,U',L,F',L',F,L,F',L',F,L,F',L',F]
+    y = [F',L,F,L',F',L,F,L',F',L,F,L',U,F',L,F,L',F',L,F,L',F',L,F,L',U,F',L,F,L',F',L,F,L',F',L,F,L',U,U,F',L,F,L',F',L,F,L',F',L,F,L']
     threeCycleToSequence ts = case ts of
       [1, 2, 3] -> x
       [2, 1, 3] -> y
@@ -687,12 +687,12 @@ positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ th
       _ -> []
 
 orientVertices :: CubeConfiguration -> [Turn]
-orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ tail $ M.toList (toMap zs)
+orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ M.toList (toMap zs)
   where
     x = [U, L, F', L', F, L, F', L', F, U', F', L, F, L', F', L, F, L']
     y = [U, R', F, R, F', R', F, R, F', U', F, R', F', R, F, R', F', R]
     modToSequence (n, k) = concat $
-      replicate (fromInteger $ unmod k) $
+      replicate (unmod k) $
         case n of
           2 -> x
           3 -> [B'] ++ x ++ [B]
@@ -737,21 +737,11 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
 -- >               |---+---+---|
 -- >               | ~ | ~ | ~ |
 -- >                -----------
-newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq, Semigroup, Monoid, Group)
+newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq, Semigroup, Monoid, Group, TwistyPuzzle)
 
 instance Show ASCIICube where
   show :: ASCIICube -> String
   show (ShowCube g) = showCube g
-
-instance TwistyPuzzle ASCIICube where
-  (|#|) :: ASCIICube -> ASCIICube -> ASCIICube
-  (ShowCube x) |#| (ShowCube y) = ShowCube (x |#| y)
-  (|#|^) :: (Eq b, IntegralDomain.C b, ZeroTestable.C b) => ASCIICube -> b -> ASCIICube
-  (ShowCube x) |#|^ n = ShowCube (x |#|^ n)
-  (|#|^|#|) :: ASCIICube -> ASCIICube -> ASCIICube
-  (ShowCube x) |#|^|#| (ShowCube y) = ShowCube (x |#|^|#| y)
-  (>|#|<) :: ASCIICube -> ASCIICube -> ASCIICube
-  (ShowCube x) >|#|< (ShowCube y) = ShowCube (x >|#|< y)
 
 -- Lookup table that assigns to each sticker color a string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
