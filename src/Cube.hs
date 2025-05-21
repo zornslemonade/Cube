@@ -601,7 +601,7 @@ generate g
           ms4 = positionVertices g3
           g4 = g3 |#| invert (turnsToConfig ms4)
           ms5 = orientVertices g4
-          g5 = g4 |#| invert (turnsToConfig ms4)
+          g5 = g4 |#| invert (turnsToConfig ms5)
           ms6 = orientLastCenter g5
        in ms6 ++ ms5 ++ ms4 ++ ms3 ++ ms2 ++ ms1
 
