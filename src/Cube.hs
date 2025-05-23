@@ -612,6 +612,18 @@ generate g
 solve :: CubeConfiguration -> Maybe [Turn]
 solve = fmap invertTurns . generate
 
+printSolve :: CubeConfiguration -> Maybe [Char]
+printSolve x = (unwords . (standardize <$>) <$> (show <$>)) . reverse <$> solve x
+  where
+    standardize x = case x of
+      "u" -> "U'"
+      "f" -> "F'"
+      "l" -> "L'"
+      "b" -> "B'"
+      "d" -> "D'"
+      "r" -> "R'"
+      _ -> x
+
 orientCenters :: CubeConfiguration -> [Turn]
 orientCenters (Cube (_, _, _, T6 xs, _, _)) = concatMap modToSequence $ M.toList xs
   where
