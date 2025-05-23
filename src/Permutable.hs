@@ -11,8 +11,7 @@
 --
 -- A module which implements the generalized symmetric group for a few specific orders.
 module Permutable
-  ( Indexable (..),
-    Permutable (..),
+  ( Permutable (..),
   )
 where
 
@@ -29,31 +28,9 @@ import qualified Test.Tasty.QuickCheck as Q
 -- Defining an Permutable type class
 ------
 
-class (Foldable z) => Indexable z where
-  -- \| Indexing
-  infixl 9 *!
-  (*!) :: z a -> Integer -> Maybe a
-  (*!) = flip M.lookup . toMap
-
-  -- \| Indexing with default
-  index :: z a -> a-> Integer -> a
-  index x a n = fromMaybe a (x *! n)
-  
-  -- \| Label each element with its index
-  labelIndices :: z a -> z (Integer, a)
-
-  size :: z a -> Int
-  size = length . toList
-
-  -- \| Converting to a map
-  toMap :: z a -> M.Map Integer a
-  toMap x = M.fromList $ toList $ labelIndices x
-
-  {-# MINIMAL labelIndices #-}
-
 -- This class is meant for container types which admit a well-defined action
 -- by the symmetric group S_n, where n is their length.
-class (Indexable z) => Permutable z where
+class Permutable z where
   -- \| Left action by permutation
   infixr 7 *?
   (*?) :: z a -> Permutation Integer -> z a

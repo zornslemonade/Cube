@@ -13,7 +13,8 @@
 -- Defining type synonyms for ordered tuples which contain only one type
 -- (Only the three needed for the CubeConfiguration type are defined)
 module Tuple
-  ( Tuple6 (..),
+  ( Indexable (..),
+    Tuple6 (..),
     Tuple8 (..),
     Tuple12 (..),
     t6,
@@ -31,7 +32,7 @@ import qualified Algebra.ToInteger as ToInteger
 import Control.Applicative (Applicative (pure), (<$>), (<*>))
 import Data.Foldable (Foldable (foldMap), toList)
 import qualified Data.Map as M
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Monoid (mappend))
 import Data.Traversable (Traversable, traverse)
 import NumericPrelude
@@ -39,34 +40,47 @@ import Permutable
 import Permutation (Permutation, (?.), (?^))
 import qualified Test.Tasty.QuickCheck as Q
 
+class (Foldable z) => Indexable z where
+  -- \| Indexing
+  infixl 9 *!
+  (*!) :: z a -> Integer -> Maybe a
+
+  -- \| Indexing with a default value
+  index :: z a -> a -> Integer -> a
+  index t a n = Data.Maybe.fromMaybe a (t *! n)
+
+  {-# MINIMAL (*!) #-}
+
+
 -- Newtype for sextuples
 
-newtype Tuple6 a = T6 (a, a, a, a, a, a) deriving (Eq, Ord)
+newtype Tuple6 a = T6 (M.Map Integer a) deriving (Eq, Ord)
 
 t6 :: a -> a -> a -> a -> a -> a -> Tuple6 a
-t6 = (((((T6 .) .) .) .) .) . (,,,,,)
+t6 a b c d e f = T6 $ M.fromDistinctAscList $ zip [1..6] [a,b,c,d,e,f]
 
 t6FromList :: [a] -> Tuple6 a
-t6FromList [a, b, c, d, e, f] = T6 (a, b, c, d, e, f)
+t6FromList [a, b, c, d, e, f] = t6 a b c d e f
+
 
 instance Functor Tuple6 where
   fmap :: (a -> b) -> Tuple6 a -> Tuple6 b
-  fmap x (T6 (a, b, c, d, e, f)) = T6 (x a, x b, x c, x d, x e, x f)
-
-instance Applicative Tuple6 where
-  pure :: a -> Tuple6 a
-  pure x = T6 (x, x, x, x, x, x)
-
-  (<*>) :: Tuple6 (a -> b) -> Tuple6 a -> Tuple6 b
-  (T6 (xa, xb, xc, xd, xe, xf)) <*> (T6 (a, b, c, d, e, f)) = T6 (xa a, xb b, xc c, xd d, xe e, xf f)
+  fmap x (T6 m) = T6 $ fmap x m
 
 instance Foldable Tuple6 where
   foldMap :: Monoid m => (a -> m) -> Tuple6 a -> m
-  foldMap mf (T6 (a, b, c, d, e, f)) = mf a `mappend` mf b `mappend` mf c `mappend` mf d `mappend` mf e `mappend` mf f
+  foldMap mf (T6 m) = foldMap mf m
 
 instance Traversable Tuple6 where
   traverse :: Applicative f => (a -> f b) -> Tuple6 a -> f (Tuple6 b)
-  traverse mf (T6 (a, b, c, d, e, f)) = t6 <$> mf a <*> mf b <*> mf c <*> mf d <*> mf e <*> mf f
+  traverse mf (T6 m) = T6 <$> traverse mf m
+
+instance Applicative Tuple6 where
+  pure :: a -> Tuple6 a
+  pure = T6 . M.fromDistinctAscList . zip [1..6] . repeat
+
+  (<*>) :: Tuple6 (a -> b) -> Tuple6 a -> Tuple6 b
+  (T6 m) <*> (T6 n) = T6 $ M.fromAscList [(k, (m M.! k) (n M.! k)) | k <- [1..6]]
 
 instance Additive.C a => Additive.C (Tuple6 a) where
   zero :: Additive.C a => Tuple6 a
@@ -87,61 +101,45 @@ instance Ring.C a => Ring.C (Tuple6 a) where
 
 instance Show a => Show (Tuple6 a) where
   show :: Show a => Tuple6 a -> String
-  show (T6 x) = show x
-
-instance Indexable Tuple6 where
-  (*!) :: Tuple6 a -> Integer -> Maybe a
-  (T6 (a, b, c, d, e, f)) *! n =
-    case n of
-      1 -> Just a
-      2 -> Just b
-      3 -> Just c
-      4 -> Just d
-      5 -> Just e
-      6 -> Just f
-      _ -> Nothing
-
-  size :: Tuple6 a -> Int
-  size = const 6
-
-  labelIndices :: Tuple6 a -> Tuple6 (Integer, a)
-  labelIndices = (<*>) ((,) <$> T6 (1, 2, 3, 4, 5, 6))
+  show = show . toList
 
 instance Permutable Tuple6 where
   (?*) :: Permutation Integer -> Tuple6 a -> Tuple6 a
-  o ?* x =
-    let y = labelIndices x
-        z = (fst <$> y)
-     in (M.findWithDefault <$> x) <*> z <*> pure (M.mapKeys (o ?.) $ M.fromList $ toList y)
+  o ?* (T6 x) = T6 $ M.mapKeys (o ?.) x
+
+instance Indexable Tuple6 where
+  (*!) :: Tuple6 a -> Integer -> Maybe a
+  (T6 x) *! n = M.lookup n x
+
 
 -- Newtype for octuples
 
-newtype Tuple8 a = T8 (a, a, a, a, a, a, a, a) deriving (Eq, Ord)
+newtype Tuple8 a = T8 (M.Map Integer a) deriving (Eq, Ord)
 
 t8 :: a -> a -> a -> a -> a -> a -> a -> a -> Tuple8 a
-t8 = (((((((T8 .) .) .) .) .) .) .) . (,,,,,,,)
+t8 a b c d e f g h = T8 $ M.fromAscList $ zip [1..8] [a,b,c,d,e,f,g,h]
 
 t8FromList :: [a] -> Tuple8 a
-t8FromList [a, b, c, d, e, f, g, h] = T8 (a, b, c, d, e, f, g, h)
+t8FromList [a, b, c, d, e, f, g, h] = t8 a b c d e f g h
 
 instance Functor Tuple8 where
   fmap :: (a -> b) -> Tuple8 a -> Tuple8 b
-  fmap x (T8 (a, b, c, d, e, f, g, h)) = T8 (x a, x b, x c, x d, x e, x f, x g, x h)
-
-instance Applicative Tuple8 where
-  pure :: a -> Tuple8 a
-  pure x = T8 (x, x, x, x, x, x, x, x)
-
-  (<*>) :: Tuple8 (a -> b) -> Tuple8 a -> Tuple8 b
-  (T8 (xa, xb, xc, xd, xe, xf, xg, xh)) <*> (T8 (a, b, c, d, e, f, g, h)) = T8 (xa a, xb b, xc c, xd d, xe e, xf f, xg g, xh h)
+  fmap x (T8 m) = T8 $ fmap x m
 
 instance Foldable Tuple8 where
   foldMap :: Monoid m => (a -> m) -> Tuple8 a -> m
-  foldMap m (T8 (a, b, c, d, e, f, g, h)) = m a `mappend` m b `mappend` m c `mappend` m d `mappend` m e `mappend` m f `mappend` m g `mappend` m h
+  foldMap mf (T8 m) = foldMap mf m
 
 instance Traversable Tuple8 where
   traverse :: Applicative f => (a -> f b) -> Tuple8 a -> f (Tuple8 b)
-  traverse m (T8 (a, b, c, d, e, f, g, h)) = t8 <$> m a <*> m b <*> m c <*> m d <*> m e <*> m f <*> m g <*> m h
+  traverse mf (T8 m) = T8 <$> traverse mf m
+
+instance Applicative Tuple8 where
+  pure :: a -> Tuple8 a
+  pure = T8 . M.fromDistinctAscList . zip [1..8] . repeat
+
+  (<*>) :: Tuple8 (a -> b) -> Tuple8 a -> Tuple8 b
+  (T8 m) <*> (T8 n) = T8 $ M.fromAscList [(k, (m M.! k) (n M.! k)) | k <- [1..8]]
 
 instance Additive.C a => Additive.C (Tuple8 a) where
   zero :: Additive.C a => Tuple8 a
@@ -162,63 +160,44 @@ instance Ring.C a => Ring.C (Tuple8 a) where
 
 instance Show a => Show (Tuple8 a) where
   show :: Show a => Tuple8 a -> String
-  show (T8 x) = show x
-
-instance Indexable Tuple8 where
-  (*!) :: Tuple8 a -> Integer -> Maybe a
-  (T8 (a, b, c, d, e, f, g, h)) *! n =
-    case n of
-      1 -> Just a
-      2 -> Just b
-      3 -> Just c
-      4 -> Just d
-      5 -> Just e
-      6 -> Just f
-      7 -> Just g
-      8 -> Just h
-      _ -> Nothing
-
-  size :: Tuple8 a -> Int
-  size = const 8
-
-  labelIndices :: Tuple8 a -> Tuple8 (Integer, a)
-  labelIndices = (<*>) ((,) <$> T8 (1, 2, 3, 4, 5, 6, 7, 8))
+  show = show . toList
 
 instance Permutable Tuple8 where
   (?*) :: Permutation Integer -> Tuple8 a -> Tuple8 a
-  o ?* x =
-    let y = labelIndices x
-        z = (fst <$> y)
-     in (M.findWithDefault <$> x) <*> z <*> pure (M.mapKeys (o ?.) $ M.fromList $ toList y)
+  o ?* (T8 x) = T8 $ M.mapKeys (o ?.) x
+
+instance Indexable Tuple8 where
+  (*!) :: Tuple8 a -> Integer -> Maybe a
+  (T8 x) *! n = M.lookup n x
 
 -- Newtype for duodecuples
 
-newtype Tuple12 a = T12 (a, a, a, a, a, a, a, a, a, a, a, a) deriving (Eq, Ord)
+newtype Tuple12 a = T12 (M.Map Integer a) deriving (Eq, Ord)
 
 t12 :: a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> a -> Tuple12 a
-t12 = (((((((((((T12 .) .) .) .) .) .) .) .) .) .) .) . (,,,,,,,,,,,)
+t12 a b c d e f g h i j k l = T12 $ M.fromAscList $ zip [1..12] [a,b,c,d,e,f,g,h,i,j,k,l]
 
 t12FromList :: [a] -> Tuple12 a
-t12FromList [a, b, c, d, e, f, g, h, i, j, k, l] = T12 (a, b, c, d, e, f, g, h, i, j, k, l)
+t12FromList [a, b, c, d, e, f, g, h, i, j, k, l] = t12 a b c d e f g h i j k l
 
 instance Functor Tuple12 where
   fmap :: (a -> b) -> Tuple12 a -> Tuple12 b
-  fmap x (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (x a, x b, x c, x d, x e, x f, x g, x h, x i, x j, x k, x l)
-
-instance Applicative Tuple12 where
-  pure :: a -> Tuple12 a
-  pure x = T12 (x, x, x, x, x, x, x, x, x, x, x, x)
-
-  (<*>) :: Tuple12 (a -> b) -> Tuple12 a -> Tuple12 b
-  (T12 (xa, xb, xc, xd, xe, xf, xg, xh, xi, xj, xk, xl)) <*> (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = T12 (xa a, xb b, xc c, xd d, xe e, xf f, xg g, xh h, xi i, xj j, xk k, xl l)
+  fmap x (T12 m) = T12 $ fmap x m
 
 instance Foldable Tuple12 where
   foldMap :: Monoid m => (a -> m) -> Tuple12 a -> m
-  foldMap m (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = m a `mappend` m b `mappend` m c `mappend` m d `mappend` m e `mappend` m f `mappend` m g `mappend` m h `mappend` m i `mappend` m j `mappend` m k `mappend` m l
+  foldMap mf (T12 m) = foldMap mf m
 
 instance Traversable Tuple12 where
   traverse :: Applicative f => (a -> f b) -> Tuple12 a -> f (Tuple12 b)
-  traverse m (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) = t12 <$> m a <*> m b <*> m c <*> m d <*> m e <*> m f <*> m g <*> m h <*> m i <*> m j <*> m k <*> m l
+  traverse mf (T12 m) = T12 <$> traverse mf m
+
+instance Applicative Tuple12 where
+  pure :: a -> Tuple12 a
+  pure = T12 . M.fromDistinctAscList . zip [1..12] . repeat
+
+  (<*>) :: Tuple12 (a -> b) -> Tuple12 a -> Tuple12 b
+  (T12 m) <*> (T12 n) = T12 $ M.fromAscList [(k, (m M.! k) (n M.! k)) | k <- [1..12]]
 
 instance Additive.C a => Additive.C (Tuple12 a) where
   zero :: Additive.C a => Tuple12 a
@@ -239,38 +218,15 @@ instance Ring.C a => Ring.C (Tuple12 a) where
 
 instance Show a => Show (Tuple12 a) where
   show :: Show a => Tuple12 a -> String
-  show (T12 x) = show x
-
-instance Indexable Tuple12 where
-  (*!) :: Tuple12 a -> Integer -> Maybe a
-  (T12 (a, b, c, d, e, f, g, h, i, j, k, l)) *! n =
-    case n of
-      1 -> Just a
-      2 -> Just b
-      3 -> Just c
-      4 -> Just d
-      5 -> Just e
-      6 -> Just f
-      7 -> Just g
-      8 -> Just h
-      9 -> Just i
-      10 -> Just j
-      11 -> Just k
-      12 -> Just l
-      _ -> Nothing
-
-  size :: Tuple12 a -> Int
-  size = const 12
-
-  labelIndices :: Tuple12 a -> Tuple12 (Integer, a)
-  labelIndices = (<*>) ((,) <$> T12 (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))
+  show = show . toList
 
 instance Permutable Tuple12 where
   (?*) :: Permutation Integer -> Tuple12 a -> Tuple12 a
-  o ?* x =
-    let y = labelIndices x
-        z = (fst <$> y)
-     in (M.findWithDefault <$> x) <*> z <*> pure (M.mapKeys (o ?.) $ M.fromList $ toList y)
+  o ?* (T12 x) = T12 $ M.mapKeys (o ?.) x
+
+instance Indexable Tuple12 where
+  (*!) :: Tuple12 a -> Integer -> Maybe a
+  (T12 x) *! n = M.lookup n x
 
 ------
 -- Testing Instances

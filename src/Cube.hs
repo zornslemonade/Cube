@@ -74,7 +74,7 @@ import qualified Algebra.Ring as Ring
 import qualified Algebra.ToInteger as ToInteger
 import qualified Algebra.ZeroTestable as ZeroTestable
 import Control.Applicative (Applicative ((<*>)), (<$>))
-import Data.Foldable (Foldable)
+import Data.Foldable (Foldable, toList)
 import qualified Data.Function as F
 import Data.Group (Group (invert))
 import qualified Data.List as L
@@ -83,6 +83,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid (mempty), (<>))
 import Data.Semigroup (Semigroup ((<>)))
 import Modular
+import Number.SI.Unit (k2)
 import NumericPrelude
 import Permutable
 import Permutation hiding (i)
@@ -90,7 +91,6 @@ import qualified Permutation as P
 import qualified Test.Tasty.QuickCheck as Q
 import Tuple
 import TwistyPuzzle
-import Number.SI.Unit (k2)
 
 ------
 -- Defining the CubeConfiguration type
@@ -298,51 +298,51 @@ i = Cube (P.i, P.i, P.i, 0, 0, 0)
 
 -- Up (Clockwise)
 u :: CubeConfiguration
-u = Cube (P.i, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], T6 (1, 0, 0, 0, 0, 0), 0, 0)
+u = Cube (P.i, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], t6 1 0 0 0 0 0, 0, 0)
 
 -- Up (Counterclockwise)
 u' :: CubeConfiguration
-u' = Cube (P.i, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], T6 (3, 0, 0, 0, 0, 0), 0, 0)
+u' = Cube (P.i, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], t6 3 0 0 0 0 0, 0, 0)
 
 -- Front (Clockwise)
 f :: CubeConfiguration
-f = Cube (P.i, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], T6 (0, 1, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f = Cube (P.i, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], t6 0 1 0 0 0 0, t12 1 0 0 0 1 0 0 1 1 0 0 0, t8 1 0 0 2 2 1 0 0)
 
 -- Front (Counterclockwise)
 f' :: CubeConfiguration
-f' = Cube (P.i, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], T6 (0, 3, 0, 0, 0, 0), T12 (1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0), T8 (1, 0, 0, 2, 2, 1, 0, 0))
+f' = Cube (P.i, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], t6 0 3 0 0 0 0, t12 1 0 0 0 1 0 0 1 1 0 0 0, t8 1 0 0 2 2 1 0 0)
 
 -- Left (Clockwise)
 l :: CubeConfiguration
-l = Cube (P.i, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], T6 (0, 0, 1, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l = Cube (P.i, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], t6 0 0 1 0 0 0, 0, t8 2 1 0 0 1 0 0 2)
 
 -- Left (Counterclockwise)
 l' :: CubeConfiguration
-l' = Cube (P.i, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], T6 (0, 0, 3, 0, 0, 0), 0, T8 (2, 1, 0, 0, 1, 0, 0, 2))
+l' = Cube (P.i, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], t6 0 0 3 0 0 0, 0, t8 2 1 0 0 1 0 0 2)
 
 -- Back (Clockwise)
 b :: CubeConfiguration
-b = Cube (P.i, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], T6 (0, 0, 0, 1, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b = Cube (P.i, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], t6 0 0 0 1 0 0, t12 0 0 1 0 0 1 1 0 0 0 1 0, t8 0 2 1 0 0 0 2 1)
 
 -- Back (Counterclockwise)
 b' :: CubeConfiguration
-b' = Cube (P.i, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], T6 (0, 0, 0, 3, 0, 0), T12 (0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0), T8 (0, 2, 1, 0, 0, 0, 2, 1))
+b' = Cube (P.i, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], t6 0 0 0 3 0 0, t12 0 0 1 0 0 1 1 0 0 0 1 0, t8 0 2 1 0 0 0 2 1)
 
 -- Right (Clockwise)
 r :: CubeConfiguration
-r = Cube (P.i, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], T6 (0, 0, 0, 0, 1, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r = Cube (P.i, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], t6 0 0 0 0 1 0, 0, t8 0 0 2 1 0 2 1 0)
 
 -- Right (Counterclockwise)
 r' :: CubeConfiguration
-r' = Cube (P.i, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], T6 (0, 0, 0, 0, 3, 0), 0, T8 (0, 0, 2, 1, 0, 2, 1, 0))
+r' = Cube (P.i, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], t6 0 0 0 0 3 0, 0, t8 0 0 2 1 0 2 1 0)
 
 -- Down (Clockwise)
 d :: CubeConfiguration
-d = Cube (P.i, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], T6 (0, 0, 0, 0, 0, 1), 0, 0)
+d = Cube (P.i, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], t6 0 0 0 0 0 1, 0, 0)
 
 -- Down (Counterclockwise)
 d' :: CubeConfiguration
-d' = Cube (P.i, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], T6 (0, 0, 0, 0, 0, 3), 0, 0)
+d' = Cube (P.i, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], t6 0 0 0 0 0 3, 0, 0)
 
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
@@ -613,7 +613,7 @@ solve :: CubeConfiguration -> Maybe [Turn]
 solve = fmap invertTurns . generate
 
 orientCenters :: CubeConfiguration -> [Turn]
-orientCenters (Cube (_, _, _, xs, _, _)) = concatMap modToSequence $ M.toList $ toMap xs
+orientCenters (Cube (_, _, _, T6 xs, _, _)) = concatMap modToSequence $ M.toList xs
   where
     modToSequence (n, k) = replicate (unmod k) $
       case n of
@@ -646,7 +646,7 @@ positionEdges (Cube (_, b, _, _, _, _)) = concatMap transpositionToSequence (tra
         _ -> []
 
 orientEdges :: CubeConfiguration -> [Turn]
-orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ M.toList $ toMap ys
+orientEdges (Cube (_, _, _, _, T12 ys, _)) = concatMap modToSequence $ M.toList ys
   where
     x = [L, U', L', U, L', F, L, F']
     y = [R', U, R, U', R, F', R', F]
@@ -669,8 +669,8 @@ orientEdges (Cube (_, _, _, _, ys, _)) = concatMap modToSequence $ M.toList $ to
 positionVertices :: CubeConfiguration -> [Turn]
 positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ threeCycleDecomposition 1 2 c
   where
-    x = [L,F',L',F,L,F',L',F,L,F',L',F,U,U,L,F',L',F,L,F',L',F,L,F',L',F,U',L,F',L',F,L,F',L',F,L,F',L',F,U',L,F',L',F,L,F',L',F,L,F',L',F]
-    y = [F',L,F,L',F',L,F,L',F',L,F,L',U,F',L,F,L',F',L,F,L',F',L,F,L',U,F',L,F,L',F',L,F,L',F',L,F,L',U,U,F',L,F,L',F',L,F,L',F',L,F,L']
+    x = [L, F', L', F, L, F', L', F, L, F', L', F, U, U, L, F', L', F, L, F', L', F, L, F', L', F, U', L, F', L', F, L, F', L', F, L, F', L', F, U', L, F', L', F, L, F', L', F, L, F', L', F]
+    y = [F', L, F, L', F', L, F, L', F', L, F, L', U, F', L, F, L', F', L, F, L', F', L, F, L', U, F', L, F, L', F', L, F, L', F', L, F, L', U, U, F', L, F, L', F', L, F, L', F', L, F, L']
     threeCycleToSequence ts = case ts of
       [1, 2, 3] -> x
       [2, 1, 3] -> y
@@ -687,7 +687,7 @@ positionVertices (Cube (_, _, c, _, _, _)) = concatMap threeCycleToSequence $ th
       _ -> []
 
 orientVertices :: CubeConfiguration -> [Turn]
-orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ M.toList (toMap zs)
+orientVertices (Cube (_, _, _, _, _, T8 zs)) = concatMap modToSequence $ M.toList zs
   where
     x = [U, L, F', L', F, L, F', L', F, U', F', L, F, L', F', L, F, L']
     y = [U, R', F, R, F', R', F, R, F', U', F, R', F', R, F, R', F', R]
@@ -704,8 +704,8 @@ orientVertices (Cube (_, _, _, _, _, zs)) = concatMap modToSequence $ M.toList (
           _ -> []
 
 orientLastCenter :: CubeConfiguration -> [Turn]
-orientLastCenter (Cube (_, _, _, xs, _, _)) = case xs of
-  T6 (2, 0, 0, 0, 0, 0) -> [U, R', L', U, U, L, R, U, R', L', U, U, L, R]
+orientLastCenter (Cube (_, _, _, xs, _, _)) = case head $ toList xs of
+  2 -> [U, R', L', U, U, L, R, U, R', L', U, U, L, R]
   _ -> []
 
 ------

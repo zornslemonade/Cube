@@ -21,10 +21,10 @@ i = turnToConfig I
 
 -- Example configurations for testing
 flippedEdges :: CubeConfiguration
-flippedEdges = Cube (P.i, P.i, P.i, 0, T12 (1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdges = Cube (P.i, P.i, P.i, 0, t12 1 1 0 0 0 0 0 0 0 0 0 0, 0)
 
 flippedEdgesIllegal :: CubeConfiguration
-flippedEdgesIllegal = Cube (P.i, P.i, P.i, 0, T12 (1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0), 0)
+flippedEdgesIllegal = Cube (P.i, P.i, P.i, 0, t12 1 1 1 0 0 0 0 0 0 0 0 0, 0)
 
 swappedVertices :: CubeConfiguration
 swappedVertices = Cube (P.i, P.i, p [[1, 2, 3]], 0, 0, 0)
@@ -33,10 +33,10 @@ swappedVerticesIllegal :: CubeConfiguration
 swappedVerticesIllegal = Cube (P.i, P.i, p [[1, 2]], 0, 0, 0)
 
 similarityExample1 :: CubeConfiguration
-similarityExample1 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 9, 7, 5, 2, 8, 10, 12, 3, 4, 11, 6]], p [[1, 5, 3], [4, 6, 8, 7]], T6 (2, 0, 1, 1, 0, 0), T12 (0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0), T8 (1, 1, 0, 0, 1, 1, 1, 2))
+similarityExample1 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 9, 7, 5, 2, 8, 10, 12, 3, 4, 11, 6]], p [[1, 5, 3], [4, 6, 8, 7]], t6 2 0 1 1 0 0, t12 0 1 0 0 0 0 0 0 1 0 0 0, t8 1 1 0 0 1 1 1 2)
 
 similarityExample2 :: CubeConfiguration
-similarityExample2 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 2, 3]], p [[]], T6 (1, 0, 0, 0, 0, 0), T12 (1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0), T8 (1, 1, 2, 0, 0, 0, 0, 0))
+similarityExample2 = Cube (p [[1, 3, 5, 4, 2]], p [[1, 2, 3]], p [[]], t6 1 0 0 0 0 0, t12 1 1 1 1 0 0 0 0 0 0 0 0, t8 1 1 2 0 0 0 0 0)
 
 -- Properties of the basic operationsS
 prop_associative :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration -> Bool
