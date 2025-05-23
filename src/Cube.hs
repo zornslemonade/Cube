@@ -743,10 +743,10 @@ instance Show ASCIICube where
   show :: ASCIICube -> String
   show (ShowCube g) = showCube g
 
--- Lookup table that assigns to each sticker color a string used in its visual representation
+-- Lookup table that assigns to each sticker color an uncolored string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
-colorLookup :: M.Map Integer String
-colorLookup =
+asciiLookup :: M.Map Integer String
+asciiLookup =
   M.fromAscList
     [ (1, "   "),
       (2, ":::"),
@@ -778,6 +778,61 @@ colorLookup =
       (28, "<~<"),
       (29, "v~v"),
       (30, ">~>")
+    ]
+
+color1 :: [Char] -> [Char]
+color1 x = "\x1b[31m" ++ x ++ "\x1b[0m"
+
+color2 :: [Char] -> [Char]
+color2 x = "\x1b[34m" ++ x ++ "\x1b[0m"
+
+color3 :: [Char] -> [Char]
+color3 x = "\x1b[32m" ++ x ++ "\x1b[0m"
+
+color4 :: [Char] -> [Char]
+color4 x = "\x1b[36m" ++ x ++ "\x1b[0m"
+
+color5 :: [Char] -> [Char]
+color5 x = "\x1b[33m" ++ x ++ "\x1b[0m"
+
+color6 :: [Char] -> [Char]
+color6 x = "\x1b[35m" ++ x ++ "\x1b[0m"
+
+-- Lookup table that assigns to each sticker color a colored string used in its visual representation
+-- This contains additional 'colors' used to represent the orientation of center cubies
+colorLookup :: M.Map Integer String
+colorLookup =
+  M.fromAscList
+    [ (1, color1 " \x25A0 "),
+      (2, color2 " \x25A0 "),
+      (3, color3 " \x25A0 "),
+      (4, color4 " \x25A0 "),
+      (5, color5 " \x25A0 "),
+      (6, color6 " \x25A0 "),
+      (7, color1 " \x25B2 "),
+      (8, color1 " \x25C0 "),
+      (9, color1 " \x25BC "),
+      (10, color1 " \x25B6 "),
+      (11, color2 " \x25B2 "),
+      (12, color2 " \x25C0 "),
+      (13, color2 " \x25BC "),
+      (14, color2 " \x25B6 "),
+      (15, color3 " \x25B2 "),
+      (16, color3 " \x25C0 "),
+      (17, color3 " \x25BC "),
+      (18, color3 " \x25B6 "),
+      (19, color4 " \x25B2 "),
+      (20, color4 " \x25C0 "),
+      (21, color4 " \x25BC "),
+      (22, color4 " \x25B6 "),
+      (23, color5 " \x25B2 "),
+      (24, color5 " \x25C0 "),
+      (25, color5 " \x25BC "),
+      (26, color5 " \x25B6 "),
+      (27, color6 " \x25B2 "),
+      (28, color6 " \x25C0 "),
+      (29, color6 " \x25BC "),
+      (30, color6 " \x25B6 ")
     ]
 
 -- Lookup table that assigns a sticker color to each cubie face
@@ -899,6 +954,10 @@ showCubeCustom lookupMap g =
 -- | Uses the default assignment of strings to colors
 showCube :: CubeConfiguration -> String
 showCube = showCubeCustom $ M.fromAscList [(x, colorLookup M.! (stickerLookup M.! x)) | x <- [1 .. 72]]
+
+-- | Uses the default assignment of strings to colors
+printCube :: CubeConfiguration -> IO ()
+printCube = putStrLn . showCube
 
 ------
 -- Testing Instances
