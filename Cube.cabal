@@ -30,6 +30,7 @@ library
     , Modular
     , Permutable
     , Permutation
+    , Skewb
     , Tuple
     , TwistyPuzzle
   other-modules:

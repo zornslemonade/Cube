@@ -14,8 +14,8 @@ module TwistyPuzzle (TwistyPuzzle (..)) where
 
 import qualified Algebra.IntegralDomain as IntegralDomain
 import qualified Algebra.ZeroTestable as ZeroTestable
-import Data.Group ( Group(invert) )
-import Data.Monoid ( (<>), Monoid(mempty) )
+import Data.Group (Group (invert))
+import Data.Monoid (Monoid (mempty), (<>))
 import NumericPrelude
 
 class (Group a) => TwistyPuzzle a where

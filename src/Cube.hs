@@ -83,7 +83,6 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid (mempty), (<>))
 import Data.Semigroup (Semigroup ((<>)))
 import Modular
-import Number.SI.Unit (k2)
 import NumericPrelude
 import Permutable
 import Permutation hiding (i)
@@ -382,17 +381,17 @@ instance Show Turn where
     case m of
       I -> "I"
       U -> "U"
-      U' -> "u"
+      U' -> "U'"
       F -> "F"
-      F' -> "f"
+      F' -> "F'"
       L -> "L"
-      L' -> "l"
+      L' -> "L'"
       B -> "B"
-      B' -> "b"
+      B' -> "B'"
       R -> "R"
-      R' -> "r"
+      R' -> "R'"
       D -> "D"
-      D' -> "d"
+      D' -> "D'"
 
 turnToConfig :: Turn -> CubeConfiguration
 turnToConfig m =
@@ -610,19 +609,13 @@ generate g
 
 -- | Given a legal configuration, returns a sequence of basic turns that produce the inverse of that configuration
 solve :: CubeConfiguration -> Maybe [Turn]
-solve = fmap invertTurns . generate
+solve = generate . invert
 
-printSolve :: CubeConfiguration -> Maybe [Char]
-printSolve x = (unwords . (standardize <$>) <$> (show <$>)) . reverse <$> solve x
-  where
-    standardize x = case x of
-      "u" -> "U'"
-      "f" -> "F'"
-      "l" -> "L'"
-      "b" -> "B'"
-      "d" -> "D'"
-      "r" -> "R'"
-      _ -> x
+-- | Given a legal configuration, returns a string of basic turns that produce the inverse of that configuration
+-- | Reads left to right
+-- | Returns "No Solution!" if the configuration is illegal
+printSolution :: CubeConfiguration -> String
+printSolution = maybe "No Solution!" (unwords . (show <$>) <$> reverse) <$> solve
 
 orientCenters :: CubeConfiguration -> [Turn]
 orientCenters (Cube (_, _, _, T6 xs, _, _)) = concatMap modToSequence $ M.toList xs
