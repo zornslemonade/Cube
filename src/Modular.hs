@@ -32,6 +32,9 @@ import Algebra.Ring as Ring
 import Algebra.ToInteger as ToInteger
 import NumericPrelude
 import Test.Tasty.QuickCheck
+import Data.Semigroup
+import Data.Monoid
+import Data.Group
 
 ------
 -- Defining modular arithmetic types
@@ -75,6 +78,18 @@ instance Modular Mod2 where
   modulus :: Mod2 -> Integer
   modulus = const 2
 
+instance Semigroup Mod2 where
+  (<>) :: Mod2 -> Mod2 -> Mod2
+  (<>) = (+)
+
+instance Monoid Mod2 where
+  mempty :: Mod2
+  mempty = 0
+
+instance Group Mod2 where
+  invert :: Mod2 -> Mod2
+  invert = negate
+
 instance Show Mod2 where
   show :: Mod2 -> String
   show (M2 x) = show x
@@ -112,6 +127,18 @@ instance Modular Mod3 where
   modulus :: Mod3 -> Integer
   modulus = const 3
 
+instance Semigroup Mod3 where
+  (<>) :: Mod3 -> Mod3 -> Mod3
+  (<>) = (+)
+
+instance Monoid Mod3 where
+  mempty :: Mod3
+  mempty = 0
+
+instance Group Mod3 where
+  invert :: Mod3 -> Mod3
+  invert = negate
+
 instance Show Mod3 where
   show :: Mod3 -> String
   show (M3 x) = show x
@@ -148,6 +175,18 @@ instance Modular Mod4 where
 
   modulus :: Mod4 -> Integer
   modulus = const 4
+
+instance Semigroup Mod4 where
+  (<>) :: Mod4 -> Mod4 -> Mod4
+  (<>) = (+)
+
+instance Monoid Mod4 where
+  mempty :: Mod4
+  mempty = 0
+
+instance Group Mod4 where
+  invert :: Mod4 -> Mod4
+  invert = negate
 
 instance Show Mod4 where
   show :: Mod4 -> String

@@ -1,5 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -34,28 +36,20 @@
 -- of the six faces.
 module Cube
   ( CubeConfiguration (..),
+    Cubie (..),
 
     -- * Basic turns
     Turn (..),
-    invertTurn,
-    invertTurns,
     turnToConfig,
     turnsToConfig,
 
     -- * Displaying configurations
     showCubeConfig,
     showCube,
-    ASCIICube (..),
 
     -- * Permutation representations
-    Cubie (..),
-    toPermutation,
-    fromPermutation,
     toNumericPermutation,
     fromNumericPermutation,
-
-    -- * Group theoretic properties
-    Cube.order,
 
     -- * Solving the cube
     isSimilarTo,
@@ -68,6 +62,7 @@ module Cube
   )
 where
 
+import Action
 import qualified Algebra.Additive as Additive
 import qualified Algebra.IntegralDomain as IntegralDomain
 import qualified Algebra.Ring as Ring
@@ -76,7 +71,6 @@ import qualified Algebra.ZeroTestable as ZeroTestable
 import Control.Applicative (Applicative ((<*>)), (<$>))
 import Data.Foldable (Foldable, toList)
 import qualified Data.Function as F
-import Data.Group (Group (invert))
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
@@ -84,12 +78,11 @@ import Data.Monoid (Monoid (mempty), (<>))
 import Data.Semigroup (Semigroup ((<>)))
 import Modular
 import NumericPrelude
-import Permutable
 import Permutation hiding (i)
 import qualified Permutation as P
 import qualified Test.Tasty.QuickCheck as Q
 import Tuple
-import TwistyPuzzle
+import TwistyPuzzle hiding (i)
 
 ------
 -- Defining the CubeConfiguration type
@@ -224,6 +217,26 @@ instance Show CubeConfiguration where
   show :: CubeConfiguration -> String
   show = showCubeConfig
 
+-- | Type for representing individual cubies
+data Cubie = C Integer Mod4 | E Integer Mod2 | V Integer Mod3 deriving (Eq, Ord, Show)
+
+isCenterCubie :: Cubie -> Bool
+isCenterCubie (C _ _) = True
+isCenterCubie _ = False
+
+isEdgeCubie :: Cubie -> Bool
+isEdgeCubie (E _ _) = True
+isEdgeCubie _ = False
+
+isVertexCubie :: Cubie -> Bool
+isVertexCubie (V _ _) = True
+isVertexCubie _ = False
+
+getCubieNumber :: Cubie -> Integer
+getCubieNumber (C n _) = n
+getCubieNumber (E n _) = n
+getCubieNumber (V n _) = n
+
 ------
 -- Instantiating typeclasses
 ------
@@ -239,53 +252,80 @@ instance Show CubeConfiguration where
 -- This has order 4^6 * 6! * 2^12 * 12! * 3^8 * 8! = 1530664174762362289520640000
 -- Neglecting center cubie orientation is equivalent to quotienting by Z_4^6 (which is a normal subgroup)
 -- This has order 373697308291592355840000
-instance Semigroup CubeConfiguration where
-  (<>) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-  (Cube (a1, b1, c1, xs1, ys1, zs1)) <> (Cube (a2, b2, c2, xs2, ys2, zs2)) = Cube (a, b, c, xs, ys, zs)
-    where
-      a = a1 ? a2
-      b = b1 ? b2
-      c = c1 ? c2
-      xs = xs1 *? a2 + xs2
-      ys = ys1 *? b2 + ys2
-      zs = zs1 *? c2 + zs2
+-- instance Semigroup CubeConfiguration where
+--  (<>) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
+--  (Cube (a1, b1, c1, xs1, ys1, zs1)) <> (Cube (a2, b2, c2, xs2, ys2, zs2)) = Cube (a, b, c, xs, ys, zs)
+--    where
+--      a = a1 ? a2
+--      b = b1 ? b2
+--      c = c1 ? c2
+--      xs = xs1 *? a2 + xs2
+--      ys = ys1 *? b2 + ys2
+--      zs = zs1 *? c2 + zs2
 
 -- The identity configuration will be given below
-instance Monoid CubeConfiguration where
-  mempty :: CubeConfiguration
-  mempty = i
+-- instance Monoid CubeConfiguration where
+--  mempty :: CubeConfiguration
+--  mempty = i
 
-instance Group CubeConfiguration where
-  invert :: CubeConfiguration -> CubeConfiguration
-  invert (Cube (a, b, c, xs, ys, zs)) = Cube (a', b', c', xs', ys', zs')
-    where
-      a' = invert a
-      b' = invert b
-      c' = invert c
-      xs' = a ?* (-xs)
-      ys' = b ?* (-ys)
-      zs' = c ?* (-zs)
+-- instance Group CubeConfiguration where
+--  invert :: CubeConfiguration -> CubeConfiguration
+--  invert (Cube (a, b, c, xs, ys, zs)) = Cube (a', b', c', xs', ys', zs')
+--    where
+--      a' = invert a
+--      b' = invert b
+--      c' = invert c
+--      xs' = a ?* (-xs)
+--      ys' = b ?* (-ys)
+--      zs' = c ?* (-zs)
 
 ------
 -- Shorthand for the group operations
 ------
 
-instance TwistyPuzzle CubeConfiguration where
-  (|#|) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-  x |#| y = x <> y
+instance TwistyPuzzle CubeConfiguration (CenterP, EdgeP, VertexP) (CenterO, EdgeO, VertexO) Cubie where
+  getPermutations :: CubeConfiguration -> (CenterP, EdgeP, VertexP)
+  getPermutations (Cube (a, b, c, xs, ys, zs)) = (a, b, c)
 
-  (|#|^) :: (Eq b, IntegralDomain.C b, ZeroTestable.C b) => CubeConfiguration -> b -> CubeConfiguration
-  x |#|^ 0 = i
-  x |#|^ (-1) = invert x
-  x |#|^ n
-    | even n = (x |#| x) |#|^ div n 2
-    | otherwise = x |#| (x |#| x) |#|^ div n 2
+  getOrientations :: CubeConfiguration -> (CenterO, EdgeO, VertexO)
+  getOrientations (Cube (a, b, c, xs, ys, zs)) = (xs, ys, zs)
 
-  (|#|^|#|) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-  x |#|^|#| y = invert y |#| x |#| y
+  constructConfig :: (CenterP, EdgeP, VertexP) -> (CenterO, EdgeO, VertexO) -> CubeConfiguration
+  constructConfig (a, b, c) (xs, ys, zs) = Cube (a, b, c, xs, ys, zs)
 
-  (>|#|<) :: CubeConfiguration -> CubeConfiguration -> CubeConfiguration
-  x >|#|< y = invert x |#| invert y |#| x |#| y
+  -- \|
+  -- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
+  -- cubie sticker are considered distinct).
+  -- This manifests as a monomorphism from the group of cube configurations into the permutation group of stickers.
+  -- Conversely, not every permutation of stickers gives a valid configuration of the cube, for example a vertex sticker can never
+  -- end up in the place of an edge sticker.
+  --
+  -- This sends a configuration to a permutation of the stickers, where each sticker is represented as a tuple (X, n, m), where
+  -- X encodes whether it is a center, edge, or vertex cubie (taking the values 'C', 'E', or 'V', respectively), n represents the cubie
+  -- the sticker is attached to, and m represents the face of that cubie that the sticker is attached to.
+  -- For center cubies, m represents the orientation of the sticker.
+  toPermutation :: CubeConfiguration -> Permutation Cubie
+  toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
+    where
+      t *!! n = index t 0 n
+      a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+      b' = pp [(E n k, E (b ?. n) (ys *!! n + k)) | n <- [1 .. 12], k <- [0, 1]]
+      c' = pp [(V n k, V (c ?. n) (zs *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
+
+  fromPermutation :: Permutation Cubie -> Maybe CubeConfiguration
+  fromPermutation o = if all staysSame (fst <$> toPairs o) then Just $ Cube (a, b, c, xs, ys, zs) else Nothing
+    where
+      staysSame cubie = case cubie of
+        C _ _ -> isCenterCubie (o ?. cubie)
+        E _ _ -> isEdgeCubie (o ?. cubie)
+        V _ _ -> isVertexCubie (o ?. cubie)
+      getCubieNumbers = uncurry ((,) `F.on` getCubieNumber)
+      a = pp $ map getCubieNumbers $ filter (isCenterCubie . fst) $ toPairs o
+      b = pp $ map getCubieNumbers $ filter (isEdgeCubie . fst) $ toPairs o
+      c = pp $ map getCubieNumbers $ filter (isVertexCubie . fst) $ toPairs o
+      xs = t6FromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
+      ys = t12FromList [case o ?. E n 0 of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
+      zs = t8FromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 ------
 -- Explicitly writing out the cube configurations corresponding to the identity plus the single Turn of each face
@@ -293,55 +333,31 @@ instance TwistyPuzzle CubeConfiguration where
 
 -- Identity (no change)
 i :: CubeConfiguration
-i = Cube (P.i, P.i, P.i, 0, 0, 0)
+i = solved
 
 -- Up (Clockwise)
 u :: CubeConfiguration
 u = Cube (P.i, p [[1, 2, 3, 4]], p [[1, 2, 3, 4]], t6 1 0 0 0 0 0, 0, 0)
 
--- Up (Counterclockwise)
-u' :: CubeConfiguration
-u' = Cube (P.i, p [[1, 4, 3, 2]], p [[1, 4, 3, 2]], t6 3 0 0 0 0 0, 0, 0)
-
 -- Front (Clockwise)
 f :: CubeConfiguration
 f = Cube (P.i, p [[1, 8, 9, 5]], p [[1, 4, 6, 5]], t6 0 1 0 0 0 0, t12 1 0 0 0 1 0 0 1 1 0 0 0, t8 1 0 0 2 2 1 0 0)
-
--- Front (Counterclockwise)
-f' :: CubeConfiguration
-f' = Cube (P.i, p [[1, 5, 9, 8]], p [[1, 5, 6, 4]], t6 0 3 0 0 0 0, t12 1 0 0 0 1 0 0 1 1 0 0 0, t8 1 0 0 2 2 1 0 0)
 
 -- Left (Clockwise)
 l :: CubeConfiguration
 l = Cube (P.i, p [[2, 5, 12, 6]], p [[1, 5, 8, 2]], t6 0 0 1 0 0 0, 0, t8 2 1 0 0 1 0 0 2)
 
--- Left (Counterclockwise)
-l' :: CubeConfiguration
-l' = Cube (P.i, p [[2, 6, 12, 5]], p [[1, 2, 8, 5]], t6 0 0 3 0 0 0, 0, t8 2 1 0 0 1 0 0 2)
-
 -- Back (Clockwise)
 b :: CubeConfiguration
 b = Cube (P.i, p [[3, 6, 11, 7]], p [[2, 8, 7, 3]], t6 0 0 0 1 0 0, t12 0 0 1 0 0 1 1 0 0 0 1 0, t8 0 2 1 0 0 0 2 1)
-
--- Back (Counterclockwise)
-b' :: CubeConfiguration
-b' = Cube (P.i, p [[3, 7, 11, 6]], p [[2, 3, 7, 8]], t6 0 0 0 3 0 0, t12 0 0 1 0 0 1 1 0 0 0 1 0, t8 0 2 1 0 0 0 2 1)
 
 -- Right (Clockwise)
 r :: CubeConfiguration
 r = Cube (P.i, p [[4, 7, 10, 8]], p [[3, 7, 6, 4]], t6 0 0 0 0 1 0, 0, t8 0 0 2 1 0 2 1 0)
 
--- Right (Counterclockwise)
-r' :: CubeConfiguration
-r' = Cube (P.i, p [[4, 8, 10, 7]], p [[3, 4, 6, 7]], t6 0 0 0 0 3 0, 0, t8 0 0 2 1 0 2 1 0)
-
 -- Down (Clockwise)
 d :: CubeConfiguration
 d = Cube (P.i, p [[9, 10, 11, 12]], p [[5, 6, 7, 8]], t6 0 0 0 0 0 1, 0, 0)
-
--- Down (Counterclockwise)
-d' :: CubeConfiguration
-d' = Cube (P.i, p [[9, 12, 11, 10]], p [[5, 8, 7, 6]], t6 0 0 0 0 0 3, 0, 0)
 
 -- | A data type representing basic turns of the cube. These are the generators of the legal cube group.
 --
@@ -398,97 +414,25 @@ turnToConfig m =
   case m of
     I -> i
     U -> u
-    U' -> u'
+    U' -> invert u
     F -> f
-    F' -> f'
+    F' -> invert f
     L -> l
-    L' -> l'
+    L' -> invert l
     B -> b
-    B' -> b'
+    B' -> invert b
     R -> r
-    R' -> r'
+    R' -> invert r
     D -> d
-    D' -> d'
+    D' -> invert d
 
 -- | Composes a sequence of turns
 turnsToConfig :: [Turn] -> CubeConfiguration
 turnsToConfig = L.foldl' (\x y -> x |#| turnToConfig y) i
 
--- This function inverts a basic turn
-invertTurn :: Turn -> Turn
-invertTurn m =
-  case m of
-    I -> I
-    U -> U'
-    U' -> U
-    F -> F'
-    F' -> F
-    L -> L'
-    L' -> L
-    B -> B'
-    B' -> B
-    R -> R'
-    R' -> R
-    D -> D'
-    D' -> D
-
-invertTurns :: [Turn] -> [Turn]
-invertTurns [] = []
-invertTurns (m : ms) = invertTurns ms ++ [invertTurn m]
-
 ------
 -- Permutation representations
 ------
-
--- | Type for representing individual cubies
-data Cubie = C Integer Mod4 | E Integer Mod2 | V Integer Mod3 deriving (Eq, Ord)
-
-isCenterCubie :: Cubie -> Bool
-isCenterCubie (C _ _) = True
-isCenterCubie _ = False
-
-isEdgeCubie :: Cubie -> Bool
-isEdgeCubie (E _ _) = True
-isEdgeCubie _ = False
-
-isVertexCubie :: Cubie -> Bool
-isVertexCubie (V _ _) = True
-isVertexCubie _ = False
-
-getCubieNumber :: Cubie -> Integer
-getCubieNumber (C n _) = n
-getCubieNumber (E n _) = n
-getCubieNumber (V n _) = n
-
--- |
--- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
--- cubie sticker are considered distinct).
--- This manifests as a monomorphism from the group of cube configurations into the permutation group of stickers.
--- Conversely, not every permutation of stickers gives a valid configuration of the cube, for example a vertex sticker can never
--- end up in the place of an edge sticker.
---
--- This sends a configuration to a permutation of the stickers, where each sticker is represented as a tuple (X, n, m), where
--- X encodes whether it is a center, edge, or vertex cubie (taking the values 'C', 'E', or 'V', respectively), n represents the cubie
--- the sticker is attached to, and m represents the face of that cubie that the sticker is attached to.
--- For center cubies, m represents the orientation of the sticker.
-toPermutation :: CubeConfiguration -> Permutation Cubie
-toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
-  where
-    t *!! n = index t 0 n
-    a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
-    b' = pp [(E n k, E (b ?. n) (ys *!! n + k)) | n <- [1 .. 12], k <- [0, 1]]
-    c' = pp [(V n k, V (c ?. n) (zs *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
-
-fromPermutation :: Permutation Cubie -> CubeConfiguration
-fromPermutation o = Cube (a, b, c, xs, ys, zs)
-  where
-    getCubieNumbers = uncurry ((,) `F.on` getCubieNumber)
-    a = pp $ map getCubieNumbers $ filter (isCenterCubie . fst) $ toPairs o
-    b = pp $ map getCubieNumbers $ filter (isEdgeCubie . fst) $ toPairs o
-    c = pp $ map getCubieNumbers $ filter (isVertexCubie . fst) $ toPairs o
-    xs = t6FromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
-    ys = t12FromList [case o ?. E n 0 of E _ m -> m; _ -> 0 | n <- [1 .. 12]]
-    zs = t8FromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 -- |
 -- This sends a configuration to the same permutation of stickers, but with each sticker represented as a number between 1 and 72
@@ -535,14 +479,6 @@ fromNumericPermutation o = Cube (a, b, c, xs, ys, zs)
     xs = t6FromList $ [fromInteger $ (o ?. n) `div` 6 - n `div` 6 | n <- [1 .. 6]]
     ys = t12FromList $ [fromInteger $ (o ?. (n + 24)) `div` 12 - (n + 24) `div` 12 | n <- [1 .. 12]]
     zs = t8FromList $ [fromInteger $ (o ?. (n + 48)) `div` 8 - (n + 48) `div` 8 | n <- [1 .. 8]]
-
-------
--- Useful group functions
-------
-
--- | Gives the order of an element within the group of configurations (or, equivalently, within the group of sticker permutations)
-order :: CubeConfiguration -> Int
-order = Permutation.order . toPermutation
 
 ------
 -- Solving the Rubik's Cube
@@ -716,37 +652,6 @@ orientLastCenter (Cube (_, _, _, xs, _, _)) = case head $ toList xs of
 ------
 -- Functions to display ASCII art cubes
 ------
-
--- | Extra newtype that allows for an alternate, more visual Show instance for cube configurations
---
--- E.g. the identity configuration is displayed as
---
--- >                -----------
--- >               |   |   |   |
--- >               |---+---+---|
--- >               |   |^ ^|   |
--- >               |---+---+---|
--- >               |   |   |   |
--- >                -----------
--- >  -----------   -----------   -----------   -----------
--- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
--- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
--- > | X |^X^| X | |:::|^:^|:::| |###|^#^|###| | o |^o^| o |
--- > |---+---+---| |---+---+---| |---+---+---| |---+---+---|
--- > | X | X | X | |:::|:::|:::| |###|###|###| | o | o | o |
--- >  -----------   -----------   -----------   -----------
--- >                -----------
--- >               | ~ | ~ | ~ |
--- >               |---+---+---|
--- >               | ~ |^~^| ~ |
--- >               |---+---+---|
--- >               | ~ | ~ | ~ |
--- >                -----------
-newtype ASCIICube = ShowCube CubeConfiguration deriving (Eq, Semigroup, Monoid, Group, TwistyPuzzle)
-
-instance Show ASCIICube where
-  show :: ASCIICube -> String
-  show (ShowCube g) = showCube g
 
 -- Lookup table that assigns to each sticker color an uncolored string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies

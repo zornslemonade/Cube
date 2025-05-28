@@ -1,6 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- |
 -- Module      :  Tuple
@@ -33,12 +35,14 @@ import Control.Applicative (Applicative (pure), (<$>), (<*>))
 import Data.Foldable (Foldable (foldMap), toList)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, fromMaybe)
-import Data.Monoid (Monoid (mappend))
+import Data.Monoid (Monoid (mappend), mempty)
 import Data.Traversable (Traversable, traverse)
 import NumericPrelude
-import Permutable
+import Action
 import Permutation (Permutation, (?.), (?^))
 import qualified Test.Tasty.QuickCheck as Q
+import Data.Semigroup
+import Data.Group
 
 class (Foldable z) => Indexable z where
   -- \| Indexing
@@ -99,11 +103,24 @@ instance Ring.C a => Ring.C (Tuple6 a) where
   (*) :: Ring.C a => Tuple6 a -> Tuple6 a -> Tuple6 a
   (*) = (<*>) . ((*) <$>)
 
+instance Semigroup a => Semigroup (Tuple6 a) where
+  (<>) :: Semigroup a => Tuple6 a -> Tuple6 a -> Tuple6 a
+  (<>) = (<*>) . ((<>) <$>)
+
+instance Monoid a => Monoid (Tuple6 a) where
+  mempty :: Monoid a => Tuple6 a
+  mempty = pure mempty
+
+instance Group a => Group (Tuple6 a) where
+  invert :: Group a => Tuple6 a -> Tuple6 a
+  invert = (invert <$>)
+
+
 instance Show a => Show (Tuple6 a) where
   show :: Show a => Tuple6 a -> String
   show = show . toList
 
-instance Permutable Tuple6 where
+instance Action (Permutation Integer) (Tuple6 a) where
   (?*) :: Permutation Integer -> Tuple6 a -> Tuple6 a
   o ?* (T6 x) = T6 $ M.mapKeys (o ?.) x
 
@@ -158,11 +175,25 @@ instance Ring.C a => Ring.C (Tuple8 a) where
   (*) :: Ring.C a => Tuple8 a -> Tuple8 a -> Tuple8 a
   (*) = (<*>) . ((*) <$>)
 
+instance Semigroup a => Semigroup (Tuple8 a) where
+  (<>) :: Semigroup a => Tuple8 a -> Tuple8 a -> Tuple8 a
+  (<>) = (<*>) . ((<>) <$>)
+
+instance Monoid a => Monoid (Tuple8 a) where
+  mempty :: Monoid a => Tuple8 a
+  mempty = pure mempty
+
+instance Group a => Group (Tuple8 a) where
+  invert :: Group a => Tuple8 a -> Tuple8 a
+  invert = (invert <$>)
+
+
 instance Show a => Show (Tuple8 a) where
   show :: Show a => Tuple8 a -> String
   show = show . toList
 
-instance Permutable Tuple8 where
+
+instance Action (Permutation Integer) (Tuple8 a) where
   (?*) :: Permutation Integer -> Tuple8 a -> Tuple8 a
   o ?* (T8 x) = T8 $ M.mapKeys (o ?.) x
 
@@ -216,11 +247,24 @@ instance Ring.C a => Ring.C (Tuple12 a) where
   (*) :: Ring.C a => Tuple12 a -> Tuple12 a -> Tuple12 a
   (*) = (<*>) . ((*) <$>)
 
+
+instance Semigroup a => Semigroup (Tuple12 a) where
+  (<>) :: Semigroup a => Tuple12 a -> Tuple12 a -> Tuple12 a
+  (<>) = (<*>) . ((<>) <$>)
+
+instance Monoid a => Monoid (Tuple12 a) where
+  mempty :: Monoid a => Tuple12 a
+  mempty = pure mempty
+
+instance Group a => Group (Tuple12 a) where
+  invert :: Group a => Tuple12 a -> Tuple12 a
+  invert = (invert <$>)
+
 instance Show a => Show (Tuple12 a) where
   show :: Show a => Tuple12 a -> String
   show = show . toList
 
-instance Permutable Tuple12 where
+instance Action (Permutation Integer) (Tuple12 a) where
   (?*) :: Permutation Integer -> Tuple12 a -> Tuple12 a
   o ?* (T12 x) = T12 $ M.mapKeys (o ?.) x
 

@@ -16,11 +16,11 @@ import Data.Semigroup
 import Modular (Mod3, Mod4)
 import Number.GaloisField2p32m5 (base)
 import NumericPrelude
-import Permutable
+import Action
 import Permutation hiding (i)
 import qualified Permutation as P
 import Tuple (Tuple6, Tuple8, t6, t8)
-import TwistyPuzzle
+import TwistyPuzzle hiding (i)
 
 type CenterP = Permutation Integer
 
