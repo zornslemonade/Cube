@@ -1,6 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Skewb where
 
@@ -16,21 +18,40 @@ import Data.Semigroup
 import Modular (Mod3, Mod4)
 import Number.GaloisField2p32m5 (base)
 import NumericPrelude
+    ( filter,
+      fst,
+      map,
+      ($),
+      Eq,
+      Ord,
+      Show(show),
+      Bool(..),
+      String,
+      Integer,
+      Maybe(..),
+      uncurry,
+      all,
+      (.),
+      (+),
+      fromInteger,
+      ifThenElse )
 import Action
 import Permutation hiding (i)
 import qualified Permutation as P
-import Tuple (Tuple6, Tuple8, t6, t8)
+import Tuple
 import TwistyPuzzle hiding (i)
+import qualified Data.Function as F
+import Control.Applicative
 
 type CenterP = Permutation Integer
 
-type CornerP = Permutation Integer
+type VertexP = Permutation Integer
 
 type CenterO = Tuple6 Mod4
 
 type VertexO = Tuple8 Mod3
 
-newtype SkewbConfiguration = Skewb (CenterP, CornerP, CenterO, VertexO)
+newtype SkewbConfiguration = Skewb (CenterP, VertexP, CenterO, VertexO)
 
 showSkewbConfig :: SkewbConfiguration -> String
 showSkewbConfig (Skewb (a, b, xs, ys)) = L.intercalate "\n" [showInline a, showInline b, show xs, show ys]
@@ -39,55 +60,67 @@ instance Show SkewbConfiguration where
   show :: SkewbConfiguration -> String
   show = showSkewbConfig
 
+-- | Type for representing individual pieces
+data Skewbie = C Integer Mod4 | V Integer Mod3 deriving (Eq, Ord, Show)
+
+isCenterSkewbie :: Skewbie -> Bool
+isCenterSkewbie (C _ _) = True
+isCenterSkewbie _ = False
+
+isVertexSkewbie :: Skewbie -> Bool
+isVertexSkewbie (V _ _) = True
+isVertexSkewbie _ = False
+
+getSkewbieNumber :: Skewbie -> Integer
+getSkewbieNumber (C n _) = n
+getSkewbieNumber (V n _) = n
+
 ------
 -- Instantiating typeclasses
 ------
 
-instance Semigroup SkewbConfiguration where
-  (<>) :: SkewbConfiguration -> SkewbConfiguration -> SkewbConfiguration
-  (Skewb (a1, b1, xs1, ys1)) <> (Skewb (a2, b2, xs2, ys2)) = Skewb (a, b, xs, ys)
+instance TwistyPuzzle SkewbConfiguration (CenterP, VertexP) (CenterO, VertexO) Skewbie where
+  getPositions :: SkewbConfiguration -> (CenterP, VertexP)
+  getPositions (Skewb (a, b, xs, ys)) = (a, b)
+
+  getOrientations :: SkewbConfiguration -> (CenterO, VertexO)
+  getOrientations (Skewb (a, b, xs, ys)) = (xs, ys)
+
+  constructConfig :: (CenterP, VertexP) -> (CenterO, VertexO) -> SkewbConfiguration
+  constructConfig (a, b) (xs, ys) = Skewb (a, b, xs, ys)
+
+  -- \|
+  -- Configurations of the Skewb can also be seen as permutations of the set of stickers (where the 4 orientations of each center
+  -- Skewbie sticker are considered distinct).
+  -- This manifests as a monomorphism from the group of Skewb configurations into the permutation group of stickers.
+  -- Conversely, not every permutation of stickers gives a valid configuration of the Skewb, for example a vertex sticker can never
+  -- end up in the place of an edge sticker.
+  --
+  -- This sends a configuration to a permutation of the stickers, where each sticker is represented as a tuple (X, n, m), where
+  -- X encodes whether it is a center, edge, or vertex Skewbie (taking the values 'C', 'E', or 'V', respectively), n represents the Skewbie
+  -- the sticker is attached to, and m represents the face of that Skewbie that the sticker is attached to.
+  -- For center Skewbies, m represents the orientation of the sticker.
+  toPermutation :: SkewbConfiguration -> Permutation Skewbie
+  toPermutation (Skewb (a, b, xs, ys)) = a' ? b'
     where
-      a = a1 ? a2
-      b = b1 ? b2
-      xs = xs1 *? a2 + xs2
-      ys = ys1 *? b2 + ys2
+      t *!! n = index t 0 n
+      a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+      b' = pp [(V n k, V (b ?. n) (ys *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
 
-instance Monoid SkewbConfiguration where
-  mempty :: SkewbConfiguration
-  mempty = i
-
-instance Group SkewbConfiguration where
-  invert :: SkewbConfiguration -> SkewbConfiguration
-  invert (Skewb (a, b, xs, ys)) = Skewb (a, b, xs, ys)
+  fromPermutation :: Permutation Skewbie -> Maybe SkewbConfiguration
+  fromPermutation o = if all staysSame (fst <$> toPairs o) then Just $ Skewb (a, b, xs, ys) else Nothing
     where
-      a' = invert a
-      b' = invert b
-      xs' = a ?* (-xs)
-      ys' = b ?* (-ys)
+      staysSame skewbie = case skewbie of
+        C _ _ -> isCenterSkewbie (o ?. skewbie)
+        V _ _ -> isVertexSkewbie (o ?. skewbie)
+      getSkewbieNumbers = uncurry ((,) `F.on` getSkewbieNumber)
+      a = pp $ map getSkewbieNumbers $ filter (isCenterSkewbie . fst) $ toPairs o
+      b = pp $ map getSkewbieNumbers $ filter (isVertexSkewbie . fst) $ toPairs o
+      xs = t6FromList [case o ?. C n 0 of C _ m -> m; _ -> 0 | n <- [1 .. 6]]
+      ys = t8FromList [case o ?. V n 0 of V _ m -> m; _ -> 0 | n <- [1 .. 8]]
 
 ------
--- Shorthand for the group operations
-------
-
-instance TwistyPuzzle SkewbConfiguration where
-  (|#|) :: SkewbConfiguration -> SkewbConfiguration -> SkewbConfiguration
-  x |#| y = x <> y
-
-  (|#|^) :: (Eq b, IntegralDomain.C b, ZeroTestable.C b) => SkewbConfiguration -> b -> SkewbConfiguration
-  x |#|^ 0 = i
-  x |#|^ (-1) = invert x
-  x |#|^ n
-    | even n = (x |#| x) |#|^ div n 2
-    | otherwise = x |#| (x |#| x) |#|^ div n 2
-
-  (|#|^|#|) :: SkewbConfiguration -> SkewbConfiguration -> SkewbConfiguration
-  x |#|^|#| y = invert y |#| x |#| y
-
-  (>|#|<) :: SkewbConfiguration -> SkewbConfiguration -> SkewbConfiguration
-  x >|#|< y = invert x |#| invert y |#| x |#| y
-
-------
--- Explicitly writing out the cube configurations corresponding to the identity plus the single Turn of each face
+-- Explicitly writing out the Skewb configurations corresponding to the identity plus the single Turn of each face
 ------
 
 -- Identity (no change)

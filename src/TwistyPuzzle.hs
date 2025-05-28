@@ -1,8 +1,8 @@
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 -- Module      :  Twisty Puzzle
@@ -13,26 +13,27 @@
 -- Portability :  Experimental
 --
 -- A module for working with twisty puzzles
-module TwistyPuzzle (TwistyPuzzle (..)) where
+module TwistyPuzzle (TwistyPuzzle (..), TwistablePuzzle (..)) where
 
-import qualified Algebra.IntegralDomain as IntegralDomain
-import qualified Algebra.ZeroTestable as ZeroTestable
-import qualified Data.Group as G
-import Data.Monoid (Monoid (mempty, mappend), (<>))
-import NumericPrelude
-import qualified Algebra.RealIntegral
-import qualified Permutation as P
 import Action
+import qualified Algebra.IntegralDomain as IntegralDomain
+import qualified Algebra.RealIntegral
+import qualified Algebra.ZeroTestable as ZeroTestable
+import Data.Bits (Bits (xor))
+import Data.Foldable
+import qualified Data.Group as G
+import Data.Monoid (Monoid (mappend, mempty), (<>))
 import Data.Semigroup
-import Data.Bits (Bits(xor))
 import Number.DimensionTerm.SI (yard)
+import NumericPrelude
+import qualified Permutation as P
 
-class (G.Group perm, G.Group orient, Action perm orient, Ord piece) => TwistyPuzzle config perm orient piece | config -> perm orient piece where
-  getPermutations :: config -> perm
+class (G.Group p, G.Group o, Action p o, Ord piece) => TwistyPuzzle config p o piece | config -> p o piece where
+  getPositions :: config -> p
 
-  getOrientations :: config -> orient
+  getOrientations :: config -> o
 
-  constructConfig :: perm -> orient -> config
+  constructConfig :: p -> o -> config
 
   -- | Composition of puzzle configurations
   infixl 7 |#|
@@ -40,9 +41,9 @@ class (G.Group perm, G.Group orient, Action perm orient, Ord piece) => TwistyPuz
   (|#|) :: config -> config -> config
   x |#| y = constructConfig (xp <> yp) (xo *? yp <> yo)
     where
-      xp = getPermutations x
+      xp = getPositions x
       xo = getOrientations x
-      yp = getPermutations y
+      yp = getPositions y
       yo = getOrientations y
 
   solved :: config
@@ -51,7 +52,7 @@ class (G.Group perm, G.Group orient, Action perm orient, Ord piece) => TwistyPuz
   invert :: config -> config
   invert x = constructConfig (G.invert xp) (xp ?* G.invert xo)
     where
-      xp = getPermutations x
+      xp = getPositions x
       xo = getOrientations x
 
   -- | Exponentiation (including negative exponents)
@@ -85,6 +86,14 @@ class (G.Group perm, G.Group orient, Action perm orient, Ord piece) => TwistyPuz
   fromPermutation :: P.Permutation piece -> Maybe config
 
   order :: config -> Int
-  order  = P.order . toPermutation
+  order = P.order . toPermutation
 
-  {-# MINIMAL getPermutations, getOrientations, constructConfig, toPermutation, fromPermutation #-}
+  {-# MINIMAL getPositions, getOrientations, constructConfig, toPermutation, fromPermutation #-}
+
+class TwistyPuzzle config p o piece => TwistablePuzzle config p o piece turn | config -> turn where
+  applyTurn :: turn -> config -> config
+
+  applyTurns :: Foldable z => config -> z turn -> config
+  applyTurns = foldr applyTurn
+
+  {-# MINIMAL applyTurn #-}
