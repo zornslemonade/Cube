@@ -76,7 +76,7 @@ import Data.Monoid (Monoid (mempty), (<>))
 import Data.Semigroup (Semigroup ((<>)))
 import Modular
 import NumericPrelude
-import Permutation hiding (i)
+import Permutation hiding (i, order)
 import qualified Permutation as P
 import qualified Test.Tasty.QuickCheck as Q
 import Tuple
@@ -292,6 +292,13 @@ instance TwistyPuzzle CubeConfiguration (CenterP, EdgeP, VertexP) (CenterO, Edge
   constructConfig :: (CenterP, EdgeP, VertexP) -> (CenterO, EdgeO, VertexO) -> CubeConfiguration
   constructConfig (a, b, c) (xs, ys, zs) = Cube (a, b, c, xs, ys, zs)
 
+  getPieceData :: CubeConfiguration -> [(Integer -> Integer -> Cubie, Integer, Integer)]
+  getPieceData _ = [(c, 6, 4), (e, 12, 2), (v, 8, 3)]
+    where
+      c m = C m . fromInteger
+      e m = E m . fromInteger
+      v m = V m . fromInteger
+
   -- \|
   -- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
   -- cubie sticker are considered distinct).
@@ -303,13 +310,13 @@ instance TwistyPuzzle CubeConfiguration (CenterP, EdgeP, VertexP) (CenterO, Edge
   -- X encodes whether it is a center, edge, or vertex cubie (taking the values 'C', 'E', or 'V', respectively), n represents the cubie
   -- the sticker is attached to, and m represents the face of that cubie that the sticker is attached to.
   -- For center cubies, m represents the orientation of the sticker.
-  toPermutation :: CubeConfiguration -> Permutation Cubie
-  toPermutation (Cube (a, b, c, xs, ys, zs)) = a' ? b' ? c'
+  permutePiece :: CubeConfiguration -> Cubie -> Cubie
+  permutePiece (Cube (a, b, c, xs, ys, zs)) = \case
+    C n k -> C (a ?. n) (xs *!! n + k)
+    E n k -> E (b ?. n) (ys *!! n + k)
+    V n k -> V (c ?. n) (zs *!! n + k)
     where
       t *!! n = index t 0 n
-      a' = pp [(C n k, C (a ?. n) (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
-      b' = pp [(E n k, E (b ?. n) (ys *!! n + k)) | n <- [1 .. 12], k <- [0, 1]]
-      c' = pp [(V n k, V (c ?. n) (zs *!! n + k)) | n <- [1 .. 8], k <- [0, 1, 2]]
 
   fromPermutation :: Permutation Cubie -> Maybe CubeConfiguration
   fromPermutation o = if all staysSame (fst <$> toPairs o) then Just $ Cube (a, b, c, xs, ys, zs) else Nothing

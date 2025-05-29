@@ -27,6 +27,7 @@ import Data.Semigroup
 import Number.DimensionTerm.SI (yard)
 import NumericPrelude
 import qualified Permutation as P
+import qualified Algebra.Ring as Ring
 
 class (G.Group p, G.Group o, Action p o, Ord piece) => TwistyPuzzle config p o piece | config -> p o piece where
   getPositions :: config -> p
@@ -81,14 +82,25 @@ class (G.Group p, G.Group o, Action p o, Ord piece) => TwistyPuzzle config p o p
   (>|#|<) :: config -> config -> config
   x >|#|< y = invert x |#| invert y |#| x |#| y
 
+  -- | Returns information on the different types of pieces for the puzzle
+  --
+  -- [(piece constructor, # of positions, # of orientations)]
+  getPieceData :: config -> [(Integer -> Integer -> piece, Integer, Integer)]
+
+  permutePiece :: config -> piece -> piece
+
   toPermutation :: config -> P.Permutation piece
+  toPermutation z = P.pp pieces
+    where
+      pieces = concatMap permutePieces $ getPieceData z
+      permutePieces (pieceConstructor, n', k') = [(pieceConstructor n k, permutePiece z $ pieceConstructor n k) | n <- [1..n'], k <- [0..k'-1]]
 
   fromPermutation :: P.Permutation piece -> Maybe config
 
   order :: config -> Int
   order = P.order . toPermutation
 
-  {-# MINIMAL getPositions, getOrientations, constructConfig, toPermutation, fromPermutation #-}
+  {-# MINIMAL getPositions, getOrientations, constructConfig, getPieceData, permutePiece, fromPermutation #-}
 
 class TwistyPuzzle config p o piece => TwistablePuzzle config p o piece turn | config -> turn where
   applyTurn :: turn -> config -> config
