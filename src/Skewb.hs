@@ -16,26 +16,8 @@ import Data.Group
 import qualified Data.List as L
 import Data.Monoid
 import Data.Semigroup
-import Modular (Mod3, Mod4)
-import Number.GaloisField2p32m5 (base)
+import Modular (Mod3, Mod4, Modular (unmod))
 import NumericPrelude
-    ( filter,
-      fst,
-      map,
-      ($),
-      Eq,
-      Ord,
-      Show(show),
-      Bool(..),
-      String,
-      Integer,
-      Maybe(..),
-      uncurry,
-      all,
-      (.),
-      (+),
-      fromInteger,
-      ifThenElse )
 import Action
 import Permutation hiding (i)
 import qualified Permutation as P
@@ -43,6 +25,8 @@ import Tuple
 import TwistyPuzzle hiding (i)
 import qualified Data.Function as F
 import Control.Applicative
+import qualified Data.Map as M
+import qualified Data.IntMap as Map
 
 type CenterP = Permutation Integer
 
@@ -167,51 +151,43 @@ dbl :: SkewbConfiguration
 dbl = Skewb (p [[3, 6, 4]], p [[2, 5, 7]], t6 0 0 0 1 0 3, t8 0 2 0 0 2 0 2 1)
 
 
+------
+-- Permutation representations
+------
 
-
-
+-- |
+-- This sends a configuration to the same permutation of stickers, but with each sticker represented as a number between 1 and 72
+-- (including a different number for each orientation of each center sticker).
+-- Center stickers (with their 4 orienations each) take values 1 - 24, edge stickers take values 25 - 48, and vertex stickers take values 49 - 72.
+--
+-- Sticker enumeration:
+--
+-- >              ---------
+-- >             |26    27 |
+-- >             |    1    |
+-- >             |25    28 |
+-- >              ---------
+-- >  ---------   ---------   ---------   ---------
+-- > |34    41 | |33    44 | |36    43 | |35    42 |
+-- > |    3    | |    2    | |    5    | |    4    |
+-- > |48    37 | |45    38 | |46    39 | |47    40 |
+-- >  ---------   ---------   ---------   ---------
+-- >              ---------
+-- >             |29    30 |
+-- >             |    6    |
+-- >             |32    31 |
+-- >              ---------
+toNumericPermutation :: SkewbConfiguration -> Permutation Integer
+toNumericPermutation (Skewb (a, b, xs, ys)) = a' ? b'
+  where
+    t *!! n = index t 0 n
+    a' = pp [(n + 6 * unmod k, (a ?. n) + 6 * unmod (xs *!! n + k)) | n <- [1 .. 6], k <- [0, 1, 2, 3]]
+    b' = pp [(n + 8 * unmod k + 24, (b ?. n) + 8 * unmod (ys *!! n + k) + 24) | n <- [1 .. 8], k <- [0, 1, 2]]
 
 
 ------
 -- Functions to display ASCII art cubes
 ------
-
--- Lookup table that assigns to each sticker color an uncolored string used in its visual representation
--- This contains additional 'colors' used to represent the orientation of center cubies
-asciiLookup :: M.Map Integer String
-asciiLookup =
-  M.fromAscList
-    [ (1, "   "),
-      (2, ":::"),
-      (3, " X "),
-      (4, " o "),
-      (5, "###"),
-      (6, " ~ "),
-      (7, "^ ^"),
-      (8, "< <"),
-      (9, "v v"),
-      (10, "> >"),
-      (11, "^:^"),
-      (12, "<:<"),
-      (13, "v:v"),
-      (14, ">:>"),
-      (15, "^X^"),
-      (16, "<X<"),
-      (17, "vXv"),
-      (18, ">X>"),
-      (19, "^o^"),
-      (20, "<o<"),
-      (21, "vov"),
-      (22, ">o>"),
-      (23, "^#^"),
-      (24, "<#<"),
-      (25, "v#v"),
-      (26, ">#>"),
-      (27, "^~^"),
-      (28, "<~<"),
-      (29, "v~v"),
-      (30, ">~>")
-    ]
 
 color1 :: [Char] -> [Char]
 color1 x = "\x1b[31m" ++ x ++ "\x1b[0m"
@@ -231,10 +207,40 @@ color5 x = "\x1b[33m" ++ x ++ "\x1b[0m"
 color6 :: [Char] -> [Char]
 color6 x = "\x1b[35m" ++ x ++ "\x1b[0m"
 
+colors :: [[Char] -> [Char]]
+colors = [color1, color2, color3, color4, color5, color6]
+
+colorLookup :: M.Map Integer ([Char] -> [Char])
+colorLookup = M.fromAscList $ zip [1..6] colors
+
+
+pointup :: String
+pointup = " \x25B2 "
+
+pointright = " \x25C0 "
+
+pointdown = " \x25BC "
+
+pointleft = " \x25B6 "
+
+upperleft = " \x25E4 "
+
+upperright = " \x25E5 "
+
+bottomright = " \x25E2 "
+
+bottomleft = " \x25E3 "
+
+shapes :: [String]
+shapes = [pointup, pointright, pointdown, pointleft, upperleft, upperright, bottomright, bottomleft]
+
+shapeLookup :: M.Map Integer String
+shapeLookup = M.fromAscList $ zip [1..8] shapes
+
 -- Lookup table that assigns to each sticker color a colored string used in its visual representation
 -- This contains additional 'colors' used to represent the orientation of center cubies
-colorLookup :: M.Map Integer String
-colorLookup =
+colorLookup' :: M.Map Integer String
+colorLookup' =
   M.fromAscList
     [ (1, color1 " \x25A0 "),
       (2, color2 " \x25A0 "),
@@ -269,124 +275,110 @@ colorLookup =
     ]
 
 -- Lookup table that assigns a sticker color to each cubie face
-stickerLookup :: M.Map Integer Integer
-stickerLookup =
-  M.fromAscList
-    [ (1, 7),
-      (2, 11),
-      (3, 15),
-      (4, 19),
-      (5, 23),
-      (6, 27),
-      (7, 8),
-      (8, 12),
-      (9, 16),
-      (10, 20),
-      (11, 24),
-      (12, 28),
-      (13, 9),
-      (14, 13),
-      (15, 17),
-      (16, 21),
-      (17, 25),
-      (18, 29),
-      (19, 10),
-      (20, 14),
-      (21, 18),
-      (22, 22),
-      (23, 26),
-      (24, 30),
-      (25, 1),
-      (26, 1),
-      (27, 1),
-      (28, 1),
-      (29, 2),
-      (30, 4),
-      (31, 4),
-      (32, 2),
-      (33, 6),
-      (34, 6),
-      (35, 6),
-      (36, 6),
-      (37, 2),
-      (38, 3),
-      (39, 4),
-      (40, 5),
-      (41, 3),
-      (42, 3),
-      (43, 5),
-      (44, 5),
-      (45, 2),
-      (46, 5),
-      (47, 4),
-      (48, 3),
-      (49, 1),
-      (50, 1),
-      (51, 1),
-      (52, 1),
-      (53, 6),
-      (54, 6),
-      (55, 6),
-      (56, 6),
-      (57, 2),
-      (58, 3),
-      (59, 4),
-      (60, 5),
-      (61, 3),
-      (62, 2),
-      (63, 5),
-      (64, 4),
-      (65, 3),
-      (66, 4),
-      (67, 5),
-      (68, 2),
-      (69, 2),
-      (70, 5),
-      (71, 4),
-      (72, 3)
-    ]
+stickerLookup :: Integer -> String
+stickerLookup = \case
+  1 -> color1 pointup
+  2 -> color2 pointup
+  3 -> color3 pointup
+  4 -> color4 pointup
+  5 -> color5 pointup
+  6 -> color6 pointup
+  7 -> color1 pointright
+  8 -> color2 pointright
+  9 -> color3 pointright
+  10 -> color4 pointright
+  11 -> color5 pointright
+  12 -> color6 pointright
+  13 -> color1 pointdown
+  14 -> color2 pointdown
+  15 -> color3 pointdown
+  16 -> color4 pointdown
+  17 -> color5 pointdown
+  18 -> color6 pointdown
+  19 -> color1 pointleft
+  20 -> color2 pointleft
+  21 -> color3 pointleft
+  22 -> color4 pointleft
+  23 -> color5 pointleft
+  24 -> color6 pointleft
+  25 -> color1 bottomleft
+  26 -> color1 upperleft
+  27 -> color1 upperright
+  28 -> color1 bottomright
+  29 -> color6 upperleft
+  30 -> color6 upperright
+  31 -> color6 bottomright
+  32 -> color6 bottomleft
+  33 -> color2 upperleft
+  34 -> color3 upperleft
+  35 -> color4 upperleft
+  36 -> color5 upperleft
+  37 -> color3 bottomright
+  38 -> color2 bottomright
+  39 -> color5 bottomright
+  40 -> color4 bottomright
+  41 -> color3 upperright
+  42 -> color4 upperright
+  43 -> color5 upperright
+  44 -> color2 upperright
+  45 -> color2 bottomleft
+  46 -> color5 bottomleft
+  47 -> color4 bottomleft
+  48 -> color3 bottomleft
+--
+-- >              ---------
+-- >             |26    27 |
+-- >             |    1    |
+-- >             |25    28 |
+-- >              ---------
+-- >  ---------   ---------   ---------   ---------
+-- > |34    41 | |33    44 | |36    43 | |35    42 |
+-- > |    3    | |    2    | |    5    | |    4    |
+-- > |48    37 | |45    38 | |46    39 | |47    40 |
+-- >  ---------   ---------   ---------   ---------
+-- >              ---------
+-- >             |29    30 |
+-- >             |    6    |
+-- >             |32    31 |
+-- >              ---------
 
 -- Generates the ASCII art representation of a cube configuration
 -- Takes as input a string for each individual sticker
-drawCube :: [[Char]] -> [[Char]]
-drawCube xs = case xs of
-  [c10, c20, c30, c40, c50, c60, c11, c21, c31, c41, c51, c61, c12, c22, c32, c42, c52, c62, c13, c23, c33, c43, c53, c63, e10, e20, e30, e40, e50, e60, e70, e80, e90, e100, e110, e120, e11, e21, e31, e41, e51, e61, e71, e81, e91, e101, e111, e121, v10, v20, v30, v40, v50, v60, v70, v80, v11, v21, v31, v41, v51, v61, v71, v81, v12, v22, v32, v42, v52, v62, v72, v82] ->
-    [ "                 ---------                             ",
-      "                | \x25E4 \x25E2 \x25E3 \x25E5 |                            ",
-      "                | \x25E2   \x25FC \x25E3 |                            ",
-      "                | \x25E5     \x25E4 |                            ",
-      "                | \x25E3 \x25E5 \x25E4 \x25E2 |                            ",
-      "                 ---------                             ",
-      "   -----------   -----------   -----------   ----------- ",
-      "  |" ++ v21 ++ "|" ++ e21 ++ "|" ++ v12 ++ "| |" ++ v11 ++ "|" ++ e11 ++ "|" ++ v42 ++ "| |" ++ v41 ++ "|" ++ e41 ++ "|" ++ v32 ++ "| |" ++ v31 ++ "|" ++ e31 ++ "|" ++ v22 ++ "|",
-      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
-      "  |" ++ e61 ++ "|" ++ c30 ++ "|" ++ e51 ++ "| |" ++ e50 ++ "|" ++ c20 ++ "|" ++ e80 ++ "| |" ++ e81 ++ "|" ++ c50 ++ "|" ++ e71 ++ "| |" ++ e70 ++ "|" ++ c40 ++ "|" ++ e60 ++ "|",
-      "  |---+---+---| |---+---+---| |---+---+---| |---+---+---|",
-      "  |" ++ v82 ++ "|" ++ e121 ++ "|" ++ v51 ++ "| |" ++ v52 ++ "|" ++ e91 ++ "|" ++ v61 ++ "| |" ++ v62 ++ "|" ++ e101 ++ "|" ++ v71 ++ "| |" ++ v72 ++ "|" ++ e111 ++ "|" ++ v81 ++ "|",
-      "   -----------   -----------   -----------   ----------- ",
-      "                 -----------                             ",
-      "                |" ++ v50 ++ "|" ++ e90 ++ "|" ++ v60 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ e120 ++ "|" ++ c60 ++ "|" ++ e100 ++ "|                            ",
-      "                |---+---+---|                            ",
-      "                |" ++ v80 ++ "|" ++ e110 ++ "|" ++ v70 ++ "|                            ",
-      "                 -----------                             "
+drawSkewb :: [[Char]] -> [[Char]]
+drawSkewb xs = case xs of
+  [c10, c20, c30, c40, c50, c60, c11, c21, c31, c41, c51, c61, c12, c22, c32, c42, c52, c62, c13, c23, c33, c43, c53, c63, v10, v20, v30, v40, v50, v60, v70, v80, v11, v21, v31, v41, v51, v61, v71, v81, v12, v22, v32, v42, v52, v62, v72, v82] ->
+    [
+      "              ---------",
+      "             |" ++ v20 ++ "   " ++ v30 ++ "|",
+      "             |   " ++ c10 ++ "   |",
+      "             |" ++ v10 ++ "   " ++ v40 ++ "|",
+      "              ---------",
+      "  ---------   ---------   ---------   ---------",
+      " |" ++ v21 ++ "   " ++ v12 ++ "| |" ++ v11 ++ "   " ++ v42 ++ "| |" ++ v41 ++ "   " ++ v32 ++ "| |" ++ v31 ++ "   " ++ v22 ++ "|",
+      " |   " ++ c30 ++ "   | |   " ++ c20 ++ "   | |   " ++ c50 ++ "   | |   " ++ c40 ++ "   |",
+      " |" ++ v82 ++ "   " ++ v51 ++ "| |" ++ v52 ++ "   " ++ v61 ++ "| |" ++ v62 ++ "   " ++ v71 ++ "| |" ++ v72 ++ "   " ++ v81 ++ "|",
+      "  ---------   ---------   ---------   ---------",
+      "              ---------",
+      "             |" ++ v50 ++ "   " ++ v60 ++ "|",
+      "             |   " ++ c60 ++ "   |",
+      "             |" ++ v80 ++ "   " ++ v70 ++ "|",
+      "              ---------"
     ]
   _ -> ["Attempted to draw a cube without the correct number of stickers :("]
 
 -- | Creates the list of string representing the cube configuration as ASCII art
 -- Takes as input a Map which sends the numbers 1 - 72 to strings. Each string should be three characteres long.
 -- These serve as the stickers for the ASCII art. The stickers are enumerated just as in the definition of 'toNumericPermutation'.
-showCubeCustom :: M.Map Integer String -> CubeConfiguration -> String
-showCubeCustom lookupMap g =
+showSkewbCustom :: M.Map Integer String -> SkewbConfiguration -> String
+showSkewbCustom lookupMap g =
   let o = toNumericPermutation g
       stickerColors = M.elems $ M.fromList [(o ?. n, x) | (n, x) <- M.toList lookupMap]
-   in L.intercalate "\n" $ drawCube stickerColors
+   in L.intercalate "\n" $ drawSkewb stickerColors
 
 -- | Uses the default assignment of strings to colors
-showCube :: CubeConfiguration -> String
-showCube = showCubeCustom $ M.fromAscList [(x, colorLookup M.! (stickerLookup M.! x)) | x <- [1 .. 72]]
+showCube :: SkewbConfiguration -> String
+showCube = showSkewbCustom $ M.fromAscList [(x, stickerLookup x) | x <- [1 .. 48]]
 
 -- | Uses the default assignment of strings to colors
-printCube :: CubeConfiguration -> IO ()
+printCube :: SkewbConfiguration -> IO ()
 printCube = putStrLn . showCube
