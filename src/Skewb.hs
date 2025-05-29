@@ -12,7 +12,7 @@ import qualified Algebra.IntegralDomain as IntegralDomain
 import qualified Algebra.Ring as Ring
 import qualified Algebra.ToInteger as ToInteger
 import qualified Algebra.ZeroTestable as ZeroTestable
-import Data.Group
+import Data.Group hiding (invert)
 import qualified Data.List as L
 import Data.Monoid
 import Data.Semigroup
@@ -27,6 +27,7 @@ import qualified Data.Function as F
 import Control.Applicative
 import qualified Data.Map as M
 import qualified Data.IntMap as Map
+import GHC.RTS.Flags (GCFlags(oldGenFactor))
 
 type CenterP = Permutation Integer
 
@@ -81,10 +82,10 @@ instance TwistyPuzzle SkewbConfiguration (CenterP, VertexP) (CenterO, VertexO) S
       v m = V m . fromInteger
 
   -- \|
-  -- Configurations of the cube can also be seen as permutations of the set of stickers (where the 4 orientations of each center
+  -- Configurations of the skewb can also be seen as permutations of the set of stickers (where the 4 orientations of each center
   -- cubie sticker are considered distinct).
-  -- This manifests as a monomorphism from the group of cube configurations into the permutation group of stickers.
-  -- Conversely, not every permutation of stickers gives a valid configuration of the cube, for example a vertex sticker can never
+  -- This manifests as a monomorphism from the group of skewb configurations into the permutation group of stickers.
+  -- Conversely, not every permutation of stickers gives a valid configuration of the skewb, for example a vertex sticker can never
   -- end up in the place of an edge sticker.
   --
   -- This sends a configuration to a permutation of the stickers, where each sticker is represented as a tuple (X, n, m), where
@@ -186,7 +187,7 @@ toNumericPermutation (Skewb (a, b, xs, ys)) = a' ? b'
 
 
 ------
--- Functions to display ASCII art cubes
+-- Functions to display ASCII art skewbs
 ------
 
 color1 :: [Char] -> [Char]
@@ -275,8 +276,8 @@ colorLookup' =
     ]
 
 -- Lookup table that assigns a sticker color to each cubie face
-stickerLookup :: Integer -> String
-stickerLookup = \case
+stickerLookup' :: Integer -> String
+stickerLookup' = \case
   1 -> color1 pointup
   2 -> color2 pointup
   3 -> color3 pointup
@@ -325,6 +326,115 @@ stickerLookup = \case
   46 -> color5 bottomleft
   47 -> color4 bottomleft
   48 -> color3 bottomleft
+
+stickerLookup :: [(Integer, Integer)] -> [String]
+stickerLookup = (getSticker <$>)
+  where
+    getSticker (old, new) = 
+      if old <= 24
+      then
+        getColor new $ getShape new
+      else
+        getColor old $ getShape new
+    getColor = \case
+      1 -> color1
+      2 -> color2
+      3 -> color3
+      4 -> color4
+      5 -> color5
+      6 -> color6
+      7 -> color1
+      8 -> color2
+      9 -> color3
+      10 -> color4
+      11 -> color5
+      12 -> color6
+      13 -> color1
+      14 -> color2
+      15 -> color3
+      16 -> color4
+      17 -> color5
+      18 -> color6
+      19 -> color1
+      20 -> color2
+      21 -> color3
+      22 -> color4
+      23 -> color5
+      24 -> color6
+      25 -> color1
+      26 -> color1
+      27 -> color1
+      28 -> color1
+      29 -> color6
+      30 -> color6
+      31 -> color6
+      32 -> color6
+      33 -> color2
+      34 -> color3
+      35 -> color4
+      36 -> color5
+      37 -> color3
+      38 -> color2
+      39 -> color5
+      40 -> color4
+      41 -> color3
+      42 -> color4
+      43 -> color5
+      44 -> color2
+      45 -> color2
+      46 -> color5
+      47 -> color4
+      48 -> color3
+    getShape = \case
+      1 -> pointup
+      2 -> pointup
+      3 -> pointup
+      4 -> pointup
+      5 -> pointup
+      6 -> pointup
+      7 -> pointright
+      8 -> pointright
+      9 -> pointright
+      10 -> pointright
+      11 -> pointright
+      12 -> pointright
+      13 -> pointdown
+      14 -> pointdown
+      15 -> pointdown
+      16 -> pointdown
+      17 -> pointdown
+      18 -> pointdown
+      19 -> pointleft
+      20 -> pointleft
+      21 -> pointleft
+      22 -> pointleft
+      23 -> pointleft
+      24 -> pointleft
+      25 -> bottomleft
+      26 -> upperleft
+      27 -> upperright
+      28 -> bottomright
+      29 -> upperleft
+      30 -> upperright
+      31 -> bottomright
+      32 -> bottomleft
+      33 -> upperleft
+      34 -> upperleft
+      35 -> upperleft
+      36 -> upperleft
+      37 -> bottomright
+      38 -> bottomright
+      39 -> bottomright
+      40 -> bottomright
+      41 -> upperright
+      42 -> upperright
+      43 -> upperright
+      44 -> upperright
+      45 -> bottomleft
+      46 -> bottomleft
+      47 -> bottomleft
+      48 -> bottomleft
+
 --
 -- >              ---------
 -- >             |26    27 |
@@ -342,7 +452,7 @@ stickerLookup = \case
 -- >             |32    31 |
 -- >              ---------
 
--- Generates the ASCII art representation of a cube configuration
+-- Generates the ASCII art representation of a skewb configuration
 -- Takes as input a string for each individual sticker
 drawSkewb :: [[Char]] -> [[Char]]
 drawSkewb xs = case xs of
@@ -364,21 +474,22 @@ drawSkewb xs = case xs of
       "             |" ++ v80 ++ "   " ++ v70 ++ "|",
       "              ---------"
     ]
-  _ -> ["Attempted to draw a cube without the correct number of stickers :("]
+  _ -> ["Attempted to draw a skewb without the correct number of stickers :("]
 
--- | Creates the list of string representing the cube configuration as ASCII art
+-- | Creates the list of string representing the skewb configuration as ASCII art
 -- Takes as input a Map which sends the numbers 1 - 72 to strings. Each string should be three characteres long.
 -- These serve as the stickers for the ASCII art. The stickers are enumerated just as in the definition of 'toNumericPermutation'.
-showSkewbCustom :: M.Map Integer String -> SkewbConfiguration -> String
-showSkewbCustom lookupMap g =
-  let o = toNumericPermutation g
-      stickerColors = M.elems $ M.fromList [(o ?. n, x) | (n, x) <- M.toList lookupMap]
+showSkewbCustom :: ([(Integer, Integer)] -> [String]) -> SkewbConfiguration -> String
+showSkewbCustom lookupFunction g =
+  let o = toNumericPermutation $ invert g
+      positions = [(n, o ?. n) | n <- [1..48]]
+      stickerColors = lookupFunction positions
    in L.intercalate "\n" $ drawSkewb stickerColors
 
--- | Uses the default assignment of strings to colors
-showCube :: SkewbConfiguration -> String
-showCube = showSkewbCustom $ M.fromAscList [(x, stickerLookup x) | x <- [1 .. 48]]
+-- | Uses the default assignment of strings to colors:
+showSkewb :: SkewbConfiguration -> String
+showSkewb = showSkewbCustom $ stickerLookup
 
 -- | Uses the default assignment of strings to colors
-printCube :: SkewbConfiguration -> IO ()
-printCube = putStrLn . showCube
+printSkewb :: SkewbConfiguration -> IO ()
+printSkewb = putStrLn . showSkewb
